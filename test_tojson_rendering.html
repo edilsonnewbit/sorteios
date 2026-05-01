@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test tojson Rendering</title>
+  <style>
+    body { font-family: monospace; background: #1a1a1a; color: #fff; padding: 20px; }
+    .result { padding: 10px; margin: 10px 0; background: #2a2a2a; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Test Jinja2 tojson Rendering in HTML Attributes</h1>
+  
+  <h2>Problem: Does tojson work correctly in onclick attributes?</h2>
+  
+  <div class="result">
+    <h3>Hypothesis</h3>
+    <p>When Jinja2 renders <code>{{ c.title | tojson }}</code> inside an onclick attribute,
+       if the title contains special characters, the HTML might break.</p>
+  </div>
+
+  <!-- Test various campaign titles -->
+  <h2>Test Cases:</h2>
+  
+  <div class="result">
+    <h3>1. Simple Text</h3>
+    <button onclick="testClick('Sorteio Simples')">Click me</button>
+    <pre id="test1"></pre>
+  </div>
+
+  <div class="result">
+    <h3>2. With Apostrophe (Problem case!)</h3>
+    <button onclick="testClick('Sorteio d\\'Ano')">Click me</button>
+    <pre id="test2"></pre>
+  </div>
+
+  <div class="result">
+    <h3>3. With Quotes</h3>
+    <button onclick="testClick(\"Sorteio \\\"Premium\\\"\")">Click me</button>
+    <pre id="test3"></pre>
+  </div>
+
+  <div class="result">
+    <h3>4. What tojson Should Render (Escaped JSON)</h3>
+    <button onclick='testClick("Sorteio Normal")'>Test tojson:  "Sorteio Normal"</button>
+    <button onclick='testClick("Sorteio d\'Ano")'>Test tojson: "Sorteio d'Ano"</button>
+    <pre>
+Generated HTML with tojson should look like:
+&lt;button onclick="window.startDraw(1, &quot;Sorteio d'Ano&quot;)"&gt;
+
+But Jinja2 with tojson renders as JSON string:
+{{ "" | tojson }} → "" (with quotes as part of string)
+    </pre>
+  </div>
+
+  <div class="result">
+    <h3>HTML Source Analysis</h3>
+    <p>Right-click → View Source, look for the onclick attribute</p>
+    <p>The actual HTML generated will show if tojson is working correctly</p>
+  </div>
+
+  <script>
+    function testClick(param) {
+      console.log('Clicked with param:', param);
+      const el = event.target;
+      const onclick = el.getAttribute('onclick');
+      console.log('onclick attribute:', onclick);
+      document.getElementById('error').innerHTML = onclick;
+    }
+
+    // Analyze each button's onclick
+    window.addEventListener('load', () => {
+      document.querySelectorAll('button').forEach((btn, i) => {
+        const onclick = btn.getAttribute('onclick');
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log(`Button ${i} onclick:`, onclick);
+        });
+      });
+    });
+  </script>
+
+  <div class="result" id="error" style="color: #f87171;"></div>
+
+  <h2>Solution:</h2>
+  <p>If onclick breaks, the fix is to change the button from:</p>
+  <pre>&lt;button onclick="window.startDraw({{ c.id }}, {{ c.title | tojson }})"&gt;</pre>
+  <p>To use data attributes instead:</p>
+  <pre>&lt;button data-draw-id="{{ c.id }}" data-draw-title="{{ c.title | tojson }}" onclick="window.startDraw(this.dataset.drawId, JSON.parse(this.dataset.drawTitle))"&gt;
+
+Or use a safer approach:
+&lt;button onclick="window.startDraw({{ c.id }}, JSON.parse('{{ c.title | tojson }}'))"&gt;</pre>
+</body>
+</html>

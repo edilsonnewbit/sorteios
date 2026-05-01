@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, cast, String
 from . import models
 import math
 import datetime
@@ -497,7 +497,8 @@ def get_global_stats(db: Session) -> dict:
 def get_sales_by_day(db: Session, campaign_id: int | None = None) -> list[dict]:
     """Retorna contagem de pedidos pagos por dia (últimos 30 dias)."""
     cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=30)
-    day_col = func.date(models.Order.created_at)
+    # Normalize date to string to avoid DB-driver specific date coercion issues.
+    day_col = cast(func.date(models.Order.created_at), String)
     q = (
         db.query(
             day_col.label("day"),

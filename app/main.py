@@ -1056,11 +1056,15 @@ def admin_backup_page(request: Request, session: Session = Depends(get_db),
                       _: None = Depends(require_admin)):
     backups = backup_service.list_backups()
     backup_logs = crud.list_backup_logs(session, limit=20)
+    cloud_mode = backup_service.cloud_mode()
+    cloud_configured = cloud_mode != "none"
     gdrive_ok = backup_service.gdrive_configured()
     gdrive_files = backup_service.list_gdrive_backups() if gdrive_ok else []
     return templates.TemplateResponse(request, "admin_backup.html", {
         "backups": backups,
         "backup_logs": backup_logs,
+        "cloud_mode": cloud_mode,
+        "cloud_configured": cloud_configured,
         "gdrive_configured": gdrive_ok,
         "gdrive_files": gdrive_files,
     })
@@ -1109,14 +1113,18 @@ def admin_backup_download(filename: str, session: Session = Depends(get_db),
 def admin_backup_upload_gdrive(filename: str, request: Request,
                                session: Session = Depends(get_db),
                                _: None = Depends(require_admin)):
-    result = backup_service.upload_to_gdrive(filename)
+    result = backup_service.upload_to_cloud(filename)
     ip = _get_client_ip(request)
     if result.get("error"):
-        crud.log_admin_action(session, "backup_gdrive_error",
+        crud.log_admin_action(session, "backup_cloud_error",
                               f"Arquivo: {filename} — {result['error']}", ip)
     else:
-        crud.log_admin_action(session, "backup_gdrive",
-                              f"Arquivo: {filename} enviado ao Drive (id={result.get('file_id')})", ip)
+        detail = f"Arquivo: {filename} enviado para nuvem via {result.get('mode', 'unknown')}"
+        if result.get("file_id"):
+            detail += f" (id={result.get('file_id')})"
+        if result.get("status_code"):
+            detail += f" (status={result.get('status_code')})"
+        crud.log_admin_action(session, "backup_cloud", detail, ip)
     return RedirectResponse("/admin/backup", status_code=303)
 
 
@@ -1134,11 +1142,11 @@ def admin_backup_create_and_upload(request: Request,
         error=result.get("error"),
     )
     if result.get("filename") and not result.get("error"):
-        drive_result = backup_service.upload_to_gdrive(result["filename"])
-        detail = (f"Arquivo: {result['filename']} — Drive: "
-                  + ("ok id=" + drive_result.get("file_id", "") if not drive_result.get("error")
-                     else "erro " + drive_result.get("error", "")))
-        crud.log_admin_action(session, "backup_gdrive", detail, ip)
+        cloud_result = backup_service.upload_to_cloud(result["filename"])
+        detail = (f"Arquivo: {result['filename']} — Nuvem({cloud_result.get('mode', 'none')}): "
+                  + ("ok" if not cloud_result.get("error")
+                     else "erro " + cloud_result.get("error", "")))
+        crud.log_admin_action(session, "backup_cloud", detail, ip)
     return RedirectResponse("/admin/backup", status_code=303)
 
 

@@ -7,17 +7,25 @@
 <form method="post" action="/admin/backup/criar" style="margin:0">
   <button class="btn btn-sm" type="submit">💾 Backup Local</button>
 </form>
-{% if gdrive_configured %}
+{% if cloud_configured %}
 <form method="post" action="/admin/backup/criar-gdrive" style="margin:0">
-  <button class="btn btn-sm primary" type="submit">☁ Backup + Drive</button>
+  <button class="btn btn-sm primary" type="submit">☁ Backup + Nuvem</button>
 </form>
 {% endif %}
 {% endblock %}
 
 {% block content %}
 
-<!-- Google Drive status banner -->
-{% if gdrive_configured %}
+<!-- Cloud status banner -->
+{% if cloud_mode == 'shared_link' %}
+<div class="adm-success" style="display:flex;align-items:center;gap:10px;">
+  <span style="font-size:20px;">🔗</span>
+  <div>
+    <strong>Upload por link configurado.</strong>
+    Os backups serão enviados para a URL compartilhada, sem API do Google.
+  </div>
+</div>
+{% elif gdrive_configured %}
 <div class="adm-success" style="display:flex;align-items:center;gap:10px;">
   <span style="font-size:20px;">✅</span>
   <div>
@@ -29,9 +37,9 @@
 <div class="adm-notice" style="display:flex;align-items:center;gap:10px;">
   <span style="font-size:20px;">☁</span>
   <div>
-    <strong>Google Drive não configurado.</strong>
-    Defina <code>GDRIVE_CREDENTIALS_JSON</code> e <code>GDRIVE_FOLDER_ID</code> no
-    <code>.env</code> para habilitar envio automático ao Drive.
+    <strong>Nuvem não configurada.</strong>
+    Defina <code>BACKUP_SHARED_UPLOAD_URL</code> no
+    <code>.env</code> para envio por link (sem API). Se preferir, use o modo legado com Drive API.
     <a href="#gdrive-setup" style="color:#67e8f9;margin-left:6px;">Ver instruções ↓</a>
   </div>
 </div>
@@ -68,11 +76,11 @@
           <td>
             <div class="adm-actions">
               <a href="/admin/backup/download/{{ b.filename }}" class="btn btn-sm">⬇ Download</a>
-              {% if gdrive_configured %}
+              {% if cloud_configured %}
               <form method="post" action="/admin/backup/{{ b.filename }}/gdrive" style="margin:0">
                 <button class="btn btn-sm" type="submit"
-                        onclick="return confirm('Enviar {{ b.filename }} para o Google Drive?')">
-                  ☁ Drive
+                        onclick="return confirm('Enviar {{ b.filename }} para a nuvem?')">
+                  ☁ Nuvem
                 </button>
               </form>
               {% endif %}
@@ -86,8 +94,8 @@
   {% endif %}
 </div>
 
-<!-- Google Drive backups -->
-{% if gdrive_configured %}
+<!-- Google Drive backups (legacy mode only) -->
+{% if gdrive_configured and cloud_mode == 'gdrive' %}
 <div class="adm-card">
   <div class="adm-card-header">
     <h3>☁ Backups no Google Drive</h3>
@@ -173,9 +181,22 @@
   {% endif %}
 </div>
 
-<!-- Google Drive setup instructions -->
+<!-- Cloud setup instructions -->
 <div class="adm-card" id="gdrive-setup">
-  <h3 style="margin-top:0;">🔧 Como configurar o Google Drive</h3>
+  <h3 style="margin-top:0;">🔧 Como configurar upload por link (sem API)</h3>
+  <ol style="color:var(--muted);font-size:14px;line-height:2;padding-left:20px;margin:0 0 16px;">
+    <li>Crie um endpoint de upload e obtenha a URL compartilhada (ex: webhook n8n, Apps Script Web App, URL assinada de storage).</li>
+    <li>No <code>.env</code>, configure:</li>
+  </ol>
+  <pre style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:14px;font-size:12px;overflow-x:auto;color:#22d3ee;margin:0 0 12px;">BACKUP_SHARED_UPLOAD_URL=https://seu-endpoint/upload
+BACKUP_SHARED_UPLOAD_METHOD=PUT
+# opcional
+BACKUP_SHARED_BEARER_TOKEN=token-secreto</pre>
+  <p style="color:var(--muted);font-size:13px;margin:0 0 16px;">
+    O sistema envia o arquivo em binário com cabeçalhos <code>X-Backup-Filename</code> e <code>X-Backup-Source</code>.
+  </p>
+
+  <h3 style="margin-top:0;">🔧 Modo legado: Google Drive API (opcional)</h3>
   <ol style="color:var(--muted);font-size:14px;line-height:2;padding-left:20px;margin:0 0 16px;">
     <li>Acesse o <a href="https://console.cloud.google.com/" target="_blank" style="color:#67e8f9;">Google Cloud Console</a> e crie um projeto.</li>
     <li>Ative a <strong style="color:#e6eef6;">Google Drive API</strong> no projeto.</li>

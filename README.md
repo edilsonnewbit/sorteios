@@ -11,7 +11,7 @@ Sistema completo de sorteios com venda de números, pagamento via PIX, gestão a
 
 ---
 
-## Execução Local (Docker)
+## Execução (Docker)
 
 ```bash
 # Clonar e iniciar
@@ -19,7 +19,11 @@ git clone ...
 cp .env.example .env
 # Edite .env com suas configurações
 
+# Produção leve (recomendado para VPS)
 docker compose up --build -d
+
+# Desenvolvimento (hot reload + bind mounts)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 ```
 
 Acesse: http://localhost:8000
@@ -191,6 +195,12 @@ backups/             # Arquivos de backup do banco
 environment:
   DATABASE_URL: "postgresql://postgres:postgres@db:5432/sorteios"
 ```
+
+## Otimização para VPS pequena
+
+- O `docker-compose.yml` padrão já sobe em modo leve: sem `--reload`, com menos logs e 1 worker.
+- Para economia máxima com pouco tráfego, mantenha `workers=1`.
+- Use o override `docker-compose.dev.yml` apenas em desenvolvimento local.
 
 ---
 

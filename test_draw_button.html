@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Draw Button Test</title>
+  <style>
+    body { font-family: monospace; background: #1a1a1a; color: #fff; padding: 20px; }
+    .result { padding: 10px; margin: 10px 0; background: #2a2a2a; border-radius: 4px; }
+    .pass { color: #4ade80; }
+    .fail { color: #f87171; }
+  </style>
+</head>
+<body>
+  <h1>Draw Button JavaScript Tests</h1>
+  <div id="results"></div>
+
+  <script>
+    const results = document.getElementById('results');
+    
+    function test(name, fn) {
+      try {
+        const result = fn();
+        const div = document.createElement('div');
+        div.className = 'result pass';
+        div.innerHTML = `✓ ${name}`;
+        results.appendChild(div);
+      } catch (e) {
+        const div = document.createElement('div');
+        div.className = 'result fail';
+        div.innerHTML = `✗ ${name}: ${e.message}`;
+        results.appendChild(div);
+      }
+    }
+
+    // Test 1: Check if window.startDraw can be defined
+    test('window.startDraw function can be defined', () => {
+      window.startDraw = function(id, title) {
+        console.log('Draw called with:', id, title);
+      };
+      if (typeof window.startDraw !== 'function') throw new Error('Failed to define');
+      return true;
+    });
+
+    // Test 2: Check if getElementById works
+    test('document.getElementById works', () => {
+      const div = document.createElement('div');
+      div.id = 'testEl';
+      document.body.appendChild(div);
+      const el = document.getElementById('testEl');
+      if (!el) throw new Error('Element not found');
+      div.remove();
+      return true;
+    });
+
+    // Test 3: Check if addEventListener works
+    test('Element addEventListener works', () => {
+      const btn = document.createElement('button');
+      btn.id = 'testBtn';
+      document.body.appendChild(btn);
+      let clicked = false;
+      btn.addEventListener('click', () => { clicked = true; });
+      btn.click();
+      btn.remove();
+      if (!clicked) throw new Error('Click event not fired');
+      return true;
+    });
+
+    // Test 4: Check if Jinja2 tojson syntax would work
+    test('onclick attribute with function call works', () => {
+      const btn = document.createElement('button');
+      btn.id = 'testBtn2';
+      btn.setAttribute('onclick', 'window.startDraw(1, "Test Campaign")');
+      document.body.appendChild(btn);
+      let called = false;
+      window.startDraw = function() { called = true; };
+      btn.click();
+      btn.remove();
+      if (!called) throw new Error('onclick handler not called');
+      return true;
+    });
+
+    // Test 5: Check async function with fetch pattern
+    test('async function with fetch pattern works', async () => {
+      let results = [];
+      try {
+        const data = await Promise.resolve({ ok: true, number: 42 });
+        results.push(data);
+        if (!data.ok) throw new Error('Bad response');
+      } catch (e) {
+        throw new Error('Fetch pattern failed: ' + e.message);
+      }
+      return true;
+    });
+
+    // Test 6: Check DOM display/style toggling
+    test('DOM style.display toggle works', () => {
+      const el = document.createElement('div');
+      el.id = 'testDisplay';
+      document.body.appendChild(el);
+      
+      el.style.display = 'none';
+      if (el.style.display !== 'none') throw new Error('display:none failed');
+      
+      el.style.display = 'block';
+      if (el.style.display !== 'block') throw new Error('display:block failed');
+      
+      el.remove();
+      return true;
+    });
+
+    console.log('Draw Button Test Suite Completed');
+  </script>
+</body>
+</html>

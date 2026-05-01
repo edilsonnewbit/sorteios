@@ -3,6 +3,8 @@ import os
 import datetime
 import subprocess
 import logging
+import urllib.request
+import urllib.parse
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +110,69 @@ def get_backup_path(filename: str) -> str | None:
     return fpath
 
 
+# ─── Upload via Link Compartilhado (sem API Google) ─────────────────────────
+
+def shared_link_configured() -> bool:
+    """Retorna True se há URL de upload configurada para envio por link."""
+    return bool(os.getenv("BACKUP_SHARED_UPLOAD_URL", "").strip())
+
+
+def upload_to_shared_link(filename: str) -> dict:
+    """Envia backup para um endpoint HTTP configurado por URL compartilhada.
+
+    Ideal para links de upload (Apps Script, webhook, n8n, URL assinada, etc).
+    Variáveis:
+      - BACKUP_SHARED_UPLOAD_URL: URL de destino
+      - BACKUP_SHARED_UPLOAD_METHOD: PUT (padrão) ou POST
+      - BACKUP_SHARED_BEARER_TOKEN: opcional
+
+    Retorna {status_code, response_text, error}.
+    """
+    if not shared_link_configured():
+        return {"error": "Upload por link não configurado (BACKUP_SHARED_UPLOAD_URL ausente)"}
+
+    fpath = get_backup_path(filename)
+    if not fpath:
+        return {"error": f"Arquivo não encontrado: {filename}"}
+
+    url = os.getenv("BACKUP_SHARED_UPLOAD_URL", "").strip()
+    method = os.getenv("BACKUP_SHARED_UPLOAD_METHOD", "PUT").strip().upper() or "PUT"
+    bearer = os.getenv("BACKUP_SHARED_BEARER_TOKEN", "").strip()
+
+    if method not in {"PUT", "POST"}:
+        return {"error": "BACKUP_SHARED_UPLOAD_METHOD deve ser PUT ou POST"}
+
+    try:
+        with open(fpath, "rb") as fh:
+            payload = fh.read()
+
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in {"http", "https"}:
+            return {"error": "BACKUP_SHARED_UPLOAD_URL deve iniciar com http:// ou https://"}
+
+        req = urllib.request.Request(url=url, data=payload, method=method)
+        req.add_header("Content-Type", "application/octet-stream")
+        req.add_header("X-Backup-Filename", filename)
+        req.add_header("X-Backup-Source", "sorteios")
+        if bearer:
+            req.add_header("Authorization", f"Bearer {bearer}")
+
+        with urllib.request.urlopen(req, timeout=90) as resp:
+            body = resp.read(600).decode("utf-8", errors="replace")
+            status_code = getattr(resp, "status", 200)
+
+        logger.info("Backup enviado via link: %s (status=%s)", filename, status_code)
+        return {
+            "status_code": status_code,
+            "response_text": body,
+            "error": None,
+        }
+    except Exception as e:
+        err = str(e)
+        logger.error("Erro ao enviar backup via link: %s", err)
+        return {"error": err}
+
+
 # ─── Google Drive ─────────────────────────────────────────────────────────────
 
 def gdrive_configured() -> bool:
@@ -198,3 +263,26 @@ def list_gdrive_backups() -> list[dict]:
     except Exception as e:
         logger.error("Erro ao listar backups no Drive: %s", e)
         return []
+
+
+def cloud_mode() -> str:
+    """Retorna modo de nuvem configurado: shared_link, gdrive ou none."""
+    if shared_link_configured():
+        return "shared_link"
+    if gdrive_configured():
+        return "gdrive"
+    return "none"
+
+
+def upload_to_cloud(filename: str) -> dict:
+    """Envia backup para o provedor configurado (prioriza link compartilhado)."""
+    mode = cloud_mode()
+    if mode == "shared_link":
+        result = upload_to_shared_link(filename)
+        result["mode"] = mode
+        return result
+    if mode == "gdrive":
+        result = upload_to_gdrive(filename)
+        result["mode"] = mode
+        return result
+    return {"mode": "none", "error": "Nenhum provedor de nuvem configurado"}

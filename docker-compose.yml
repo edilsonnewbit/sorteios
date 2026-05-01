@@ -1,7 +1,7 @@
-version: '3.8'
 services:
   web:
     build: .
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
@@ -9,19 +9,15 @@ services:
       # To use SQLite (bind mount ./data): DATABASE_URL=sqlite:////data/sorteios.db
       # To use Postgres service below (production): set DATABASE_URL to postgres://postgres:postgres@db:5432/sorteios
       DATABASE_URL: "sqlite:////data/sorteios.db"
+      LOG_LEVEL: "warning"
     volumes:
-      # - opção 1 (bind mount local): persiste em ./data no host
+      # Persist database and uploads on host.
       - ./data:/data
-      # - opção 2 (named volume): comente a linha acima e descomente a linha abaixo
-      # - sorteios_data:/data
-      # mounts de desenvolvimento: mudanças em estáticos/templates/código sem rebuild
-      - ./app/static:/app/app/static
-      - ./app/templates:/app/app/templates
-      - ./app:/app/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --log-level warning --no-access-log
 
   db:
     image: postgres:15-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

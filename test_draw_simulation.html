@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Draw Screen Simulation</title>
+  <style>
+    body { font-family: sans-serif; background: #fff; padding: 20px; }
+    .status { padding: 10px; margin: 10px 0; background: #eee; border-radius: 4px; font-family: monospace; }
+    .pass { background: #d4edda; color: #155724; }
+    .fail { background: #f8d7da; color: #721c24; }
+    
+    /* Replica do CSS do admin_base.html */
+    #drawScreen {
+      display: none;
+      position: fixed; inset: 0; z-index: 9999;
+      background: #000;
+      overflow: hidden;
+    }
+    
+    .ds-body {
+      position: relative; z-index: 5;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100%; padding: 40px;
+      text-align: center;
+      color: #fff;
+    }
+    
+    #dsPhaseIntro { display: none; }
+    #dsPhaseIntro.show { display: block; }
+    
+    .ds-btn { padding: 12px 24px; margin: 10px; cursor: pointer; background: #667eea; color: #fff; border: none; border-radius: 4px; font-size: 16px; }
+    .ds-btn:hover { background: #5568d3; }
+  </style>
+</head>
+<body>
+  <h1>Draw Screen Simulation Test</h1>
+  <div id="results"></div>
+  <div id="testLog"></div>
+
+  <!-- HTML que replica do admin_base.html -->
+  <div id="drawScreen">
+    <div class="ds-body">
+      <div id="dsPhaseIntro">
+        <div class="ds-intro-icon">🎲</div>
+        <div class="ds-intro-title" id="dsIntroTitle">Sorteio</div>
+        <p class="ds-intro-sub">O número vencedor será sorteado ao vivo.</p>
+        <div class="ds-btn-row">
+          <button class="ds-btn" onclick="window.closeDraw()">Cancelar</button>
+          <button class="ds-btn" id="dsBtnStart">▶ Iniciar Sorteio</button>
+        </div>
+      </div>
+      <div id="dsPhaseAnim" style="display:none;">
+        <div class="ds-spin-label">Sorteando número</div>
+        <div id="dsSpinStatus">Embaralhando...</div>
+      </div>
+      <div id="dsPhaseWinner" style="display:none;">
+        <div class="ds-trophy">🏆</div>
+        <div class="ds-win-label">✦ Número Vencedor ✦</div>
+        <div class="ds-win-number" id="dsWinNumber">000</div>
+        <div class="ds-win-name" id="dsWinName"></div>
+        <div class="ds-win-wpp" id="dsWinWpp"></div>
+      </div>
+      <div id="dsPhaseError" style="display:none;">
+        <div class="ds-error-icon">❌</div>
+        <div class="ds-error-msg" id="dsErrorMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script que usa o mesmo padrão do admin_base.html -->
+  <script>
+    const results = document.getElementById('results');
+    const testLog = document.getElementById('testLog');
+    let drawId = null;
+
+    function logTest(name, passed, message = '') {
+      const div = document.createElement('div');
+      div.className = 'status ' + (passed ? 'pass' : 'fail');
+      div.innerHTML = `${passed ? '✓' : '✗'} ${name}${message ? ': ' + message : ''}`;
+      results.appendChild(div);
+    }
+
+    function debugLog(msg) {
+      console.log(msg);
+      const div = document.createElement('div');
+      div.style.fontFamily = 'monospace';
+      div.style.fontSize = '12px';
+      div.innerHTML = msg;
+      testLog.appendChild(div);
+    }
+
+    // IIFE Pattern - exatamente como em admin_base.html
+    (function () {
+      debugLog('[INIT] Starting Draw Screen Script');
+
+      // Variables
+      var drawId = null;
+
+      // Public API
+      window.startDraw = function (id, title) {
+        debugLog(`[CALL] startDraw(${id}, "${title}")`);
+        drawId = id;
+        document.getElementById("dsIntroTitle").textContent = title;
+        showPhase("Intro");
+        document.getElementById("drawScreen").style.display = "block";
+        document.body.style.overflow = "hidden";
+        debugLog('[PHASE] Modal shown, body overflow hidden');
+      };
+
+      window.closeDraw = function () {
+        debugLog('[CALL] closeDraw()');
+        document.getElementById("drawScreen").style.display = "none";
+        document.body.style.overflow = "";
+        drawId = null;
+      };
+
+      // Phase control
+      function showPhase(name) {
+        debugLog(`[PHASE] Showing phase: ${name}`);
+        ["Intro","Anim","Winner","Error"].forEach(function(p){
+          var el = document.getElementById("dsPhase" + p);
+          if (el) el.style.display = (p === name) ? "" : "none";
+        });
+      }
+
+      // Start button listener - EXATAMENTE IGUAL ao admin_base.html
+      document.getElementById("dsBtnStart").addEventListener("click", async function () {
+        debugLog('[LISTENER] Start button clicked');
+        if (!drawId) {
+          debugLog('[ERROR] drawId not set');
+          return;
+        }
+
+        showPhase("Anim");
+        debugLog('[ACTION] Simulating fetch to /admin/draw/' + drawId);
+
+        // Simulate fetch - fake response
+        var result = { ok: true, number: 42, reserved_by: "Test User", whatsapp: "11999999999" };
+
+        // Simulate delay
+        await new Promise(r => setTimeout(r, 2000));
+
+        if (!result || !result.ok) {
+          document.getElementById("dsErrorMsg").textContent = result ? (result.detail || "Erro ao sortear") : "Sem resposta";
+          showPhase("Error");
+          debugLog('[ERROR] Result not ok');
+          return;
+        }
+
+        // Show winner
+        document.getElementById("dsWinNumber").textContent = String(result.number).padStart(3, "0");
+        document.getElementById("dsWinName").textContent = result.reserved_by ? "🏅 " + result.reserved_by : "🎉 Número!";
+        document.getElementById("dsWinWpp").textContent = result.whatsapp ? "📱 " + result.whatsapp : "";
+
+        showPhase("Winner");
+        debugLog('[SUCCESS] Winner shown');
+      });
+
+      debugLog('[INIT] Script ready');
+    })();
+
+    // Test Suite
+    setTimeout(() => {
+      logTest('dsBtnStart element exists', !!document.getElementById("dsBtnStart"));
+      logTest('drawScreen element exists', !!document.getElementById("drawScreen"));
+      logTest('dsIntroTitle element exists', !!document.getElementById("dsIntroTitle"));
+      logTest('window.startDraw is function', typeof window.startDraw === 'function');
+      logTest('window.closeDraw is function', typeof window.closeDraw === 'function');
+
+      // Test calling startDraw
+      debugLog('[TEST] Calling window.startDraw(123, "Test Campaign")');
+      window.startDraw(123, "Test Campaign");
+
+      logTest('Modal visible after startDraw', document.getElementById("drawScreen").style.display !== 'none');
+      logTest('Intro phase shown', document.getElementById("dsPhaseIntro").style.display !== 'none');
+
+      debugLog('[TEST] Simulating button click');
+      document.getElementById("dsBtnStart").click();
+    }, 500);
+
+    console.log('Draw Screen Simulation Loaded');
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+services:
+  web:
+    environment:
+      LOG_LEVEL: "info"
+    volumes:
+      # Dev mounts: reflect code/template/static changes without rebuild.
+      - ./app/static:/app/app/static
+      - ./app/templates:/app/app/templates
+      - ./app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level info

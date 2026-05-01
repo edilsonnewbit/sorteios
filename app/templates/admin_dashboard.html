@@ -69,7 +69,7 @@
             <div class="adm-actions">
               <a href="/r/{{ c.slug }}" target="_blank" class="btn btn-sm">↗ Ver</a>
               <a href="/admin/sorteios/{{ c.id }}" class="btn btn-sm">Editar</a>
-              <button class="btn btn-sm" onclick="window.startDraw({{ c.id }}, {{ c.title | tojson }})">🎲 Sortear</button>
+              <button class="btn btn-sm" data-draw-id="{{ c.id }}" data-draw-title="{{ c.title | tojson }}" onclick="window.startDraw(parseInt(this.dataset.drawId), JSON.parse(this.dataset.drawTitle))">🎲 Sortear</button>
             </div>
           </td>
         </tr>
