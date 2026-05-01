@@ -1,0 +1,200 @@
+{% extends "admin_base.html" %}
+{% block title %}Backup{% endblock %}
+{% block page_title %}Backup do Banco de Dados{% endblock %}
+{% set active = 'backup' %}
+
+{% block topbar_actions %}
+<form method="post" action="/admin/backup/criar" style="margin:0">
+  <button class="btn btn-sm" type="submit">💾 Backup Local</button>
+</form>
+{% if gdrive_configured %}
+<form method="post" action="/admin/backup/criar-gdrive" style="margin:0">
+  <button class="btn btn-sm primary" type="submit">☁ Backup + Drive</button>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Google Drive status banner -->
+{% if gdrive_configured %}
+<div class="adm-success" style="display:flex;align-items:center;gap:10px;">
+  <span style="font-size:20px;">✅</span>
+  <div>
+    <strong>Google Drive configurado.</strong>
+    Backups podem ser enviados automaticamente para a pasta compartilhada.
+  </div>
+</div>
+{% else %}
+<div class="adm-notice" style="display:flex;align-items:center;gap:10px;">
+  <span style="font-size:20px;">☁</span>
+  <div>
+    <strong>Google Drive não configurado.</strong>
+    Defina <code>GDRIVE_CREDENTIALS_JSON</code> e <code>GDRIVE_FOLDER_ID</code> no
+    <code>.env</code> para habilitar envio automático ao Drive.
+    <a href="#gdrive-setup" style="color:#67e8f9;margin-left:6px;">Ver instruções ↓</a>
+  </div>
+</div>
+{% endif %}
+
+<!-- Local backups -->
+<div class="adm-card">
+  <div class="adm-card-header">
+    <h3>📦 Backups Locais</h3>
+    <span style="font-size:13px;color:var(--muted);">{{ backups | length }} arquivo(s)</span>
+  </div>
+  {% if not backups %}
+  <div class="empty-state">
+    Nenhum backup criado ainda.
+    <br><br>
+    <form method="post" action="/admin/backup/criar">
+      <button class="btn primary" type="submit">💾 Criar Primeiro Backup</button>
+    </form>
+  </div>
+  {% else %}
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr>
+          <th>Arquivo</th><th>Tamanho</th><th>Criado em</th><th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in backups %}
+        <tr>
+          <td style="font-family:monospace;font-size:12px;">{{ b.filename }}</td>
+          <td style="color:var(--muted);font-size:12px;">{{ (b.size_bytes / 1024)|round(1) }} KB</td>
+          <td style="color:var(--muted);font-size:12px;">{{ b.created_at[:16].replace('T', ' ') }}</td>
+          <td>
+            <div class="adm-actions">
+              <a href="/admin/backup/download/{{ b.filename }}" class="btn btn-sm">⬇ Download</a>
+              {% if gdrive_configured %}
+              <form method="post" action="/admin/backup/{{ b.filename }}/gdrive" style="margin:0">
+                <button class="btn btn-sm" type="submit"
+                        onclick="return confirm('Enviar {{ b.filename }} para o Google Drive?')">
+                  ☁ Drive
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Google Drive backups -->
+{% if gdrive_configured %}
+<div class="adm-card">
+  <div class="adm-card-header">
+    <h3>☁ Backups no Google Drive</h3>
+    <span style="font-size:13px;color:var(--muted);">{{ gdrive_files | length }} arquivo(s)</span>
+  </div>
+  {% if not gdrive_files %}
+  <div class="empty-state" style="padding:24px;">
+    Nenhum backup na pasta do Drive ainda.<br>
+    <small style="color:var(--muted);">Clique em "☁ Drive" ao lado de um backup local para enviar.</small>
+  </div>
+  {% else %}
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr><th>Arquivo</th><th>Tamanho</th><th>Enviado em</th><th>Link</th></tr>
+      </thead>
+      <tbody>
+        {% for f in gdrive_files %}
+        <tr>
+          <td style="font-family:monospace;font-size:12px;">{{ f.name }}</td>
+          <td style="color:var(--muted);font-size:12px;">
+            {% if f.size %}{{ (f.size | int / 1024) | round(1) }} KB{% else %}—{% endif %}
+          </td>
+          <td style="color:var(--muted);font-size:12px;">
+            {{ f.createdTime[:16].replace('T', ' ') if f.createdTime else '—' }}
+          </td>
+          <td>
+            {% if f.webViewLink %}
+            <a href="{{ f.webViewLink }}" target="_blank" class="btn btn-sm">↗ Abrir</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- Backup logs -->
+{% if backup_logs %}
+<div class="adm-card">
+  <h3 style="margin-top:0;">📋 Histórico de Backups</h3>
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead><tr><th>Arquivo</th><th>Status</th><th>Erro</th><th>Data</th></tr></thead>
+      <tbody>
+        {% for l in backup_logs %}
+        <tr>
+          <td style="font-size:12px;font-family:monospace;">{{ l.filename }}</td>
+          <td>
+            <span class="status-badge {% if l.status == 'success' %}paid{% else %}cancelled{% endif %}">
+              {{ l.status }}
+            </span>
+          </td>
+          <td style="font-size:11px;color:#f87171;">{{ l.error or '' }}</td>
+          <td style="font-size:11px;color:var(--muted);">
+            {{ l.created_at.strftime('%d/%m/%Y %H:%M') if l.created_at else '—' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Cron -->
+<div class="adm-card">
+  <h3 style="margin-top:0;">⏰ Backup Automático (crontab)</h3>
+  <p style="color:var(--muted);font-size:14px;line-height:1.7;margin:0 0 12px;">
+    Backup local diário às 02:00:
+  </p>
+  <pre style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:14px;font-size:12px;overflow-x:auto;color:#a78bfa;margin:0 0 12px;">0 2 * * * curl -X POST http://localhost:8000/admin/backup/criar \
+  -H "Cookie: admin_session=SEU_COOKIE" >> /var/log/sorteios-backup.log 2>&1</pre>
+  {% if gdrive_configured %}
+  <p style="color:var(--muted);font-size:14px;line-height:1.7;margin:12px 0 8px;">
+    Backup local + envio ao Drive:
+  </p>
+  <pre style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:14px;font-size:12px;overflow-x:auto;color:#34d399;margin:0;">0 2 * * * curl -X POST http://localhost:8000/admin/backup/criar-gdrive \
+  -H "Cookie: admin_session=SEU_COOKIE" >> /var/log/sorteios-backup.log 2>&1</pre>
+  {% endif %}
+</div>
+
+<!-- Google Drive setup instructions -->
+<div class="adm-card" id="gdrive-setup">
+  <h3 style="margin-top:0;">🔧 Como configurar o Google Drive</h3>
+  <ol style="color:var(--muted);font-size:14px;line-height:2;padding-left:20px;margin:0 0 16px;">
+    <li>Acesse o <a href="https://console.cloud.google.com/" target="_blank" style="color:#67e8f9;">Google Cloud Console</a> e crie um projeto.</li>
+    <li>Ative a <strong style="color:#e6eef6;">Google Drive API</strong> no projeto.</li>
+    <li>Vá em <strong style="color:#e6eef6;">IAM &amp; Admin → Service Accounts</strong> → Criar conta de serviço.</li>
+    <li>Gere uma chave JSON para a conta → faça download do arquivo.</li>
+    <li>No Google Drive, crie uma pasta para os backups e <strong style="color:#e6eef6;">compartilhe-a</strong> com o e-mail da conta de serviço (ex: <code>backup@meu-projeto.iam.gserviceaccount.com</code>).</li>
+    <li>Copie o <strong style="color:#e6eef6;">ID da pasta</strong> (parte da URL após <code>/folders/</code>).</li>
+    <li>Adicione ao <code>.env</code>:</li>
+  </ol>
+  <pre style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:14px;font-size:12px;overflow-x:auto;color:#fbbf24;margin:0 0 12px;"># Opção A — caminho para o arquivo JSON (dentro do container)
+GDRIVE_CREDENTIALS_JSON=/data/gdrive-credentials.json
+GDRIVE_FOLDER_ID=1AbCdEfGhIjKlMnOpQrStUvWxYz0123456
+
+# Opção B — conteúdo JSON direto (útil para variáveis de ambiente em Cloud)
+GDRIVE_CREDENTIALS_JSON={"type":"service_account","project_id":"...","private_key":"...","client_email":"..."}</pre>
+  <p style="color:var(--muted);font-size:13px;margin:0;">
+    💡 Se usar a Opção A, monte o arquivo no <code>docker-compose.yml</code>:
+    <code>volumes: - ./gdrive-credentials.json:/data/gdrive-credentials.json:ro</code>
+  </p>
+</div>
+
+{% endblock %}

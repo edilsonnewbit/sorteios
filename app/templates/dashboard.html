@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard — Sorteios</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep: #020617;
+      --bg-sidebar: #050e1f;
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+      --cyan: #06b6d4;
+      --text: #e6eef6;
+      --muted: #9aa4b2;
+      --border: rgba(255,255,255,0.05);
+      --sidebar-w: 250px;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── Layout ── */
+    .dash-layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .dash-sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 50;
+      overflow-y: auto;
+    }
+    .dash-brand {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 18px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #a78bfa, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .dash-nav { flex: 1; padding: 12px 10px; }
+    .dash-nav-section {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: rgba(154,164,178,0.5);
+      padding: 12px 10px 6px;
+    }
+    .dash-nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      transition: background .12s, color .12s;
+      margin-bottom: 2px;
+    }
+    .dash-nav a:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .dash-nav a.active { background: rgba(124,58,237,0.15); color: var(--accent-light); font-weight: 600; }
+    .dash-nav a .icon { font-size: 16px; width: 20px; text-align: center; }
+
+    .dash-sidebar-footer {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .dash-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .dash-user-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .dash-user-info { min-width: 0; }
+    .dash-user-name {
+      font-size: 13px;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dash-user-email {
+      font-size: 11px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dash-logout-btn {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      background: rgba(248,113,113,0.06);
+      border: 1px solid rgba(248,113,113,0.15);
+      cursor: pointer;
+      font-family: inherit;
+      text-align: left;
+      transition: background .15s, color .15s;
+    }
+    .dash-logout-btn:hover { background: rgba(248,113,113,0.12); color: #f87171; }
+
+    /* ── Main ── */
+    .dash-main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .dash-topbar {
+      background: rgba(5,14,31,0.8);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    .dash-topbar h1 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .dash-topbar h1 span { color: var(--accent-light); }
+    .btn-new {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity .15s, transform .15s, box-shadow .15s;
+      box-shadow: 0 0 20px rgba(124,58,237,0.3);
+    }
+    .btn-new:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 0 30px rgba(124,58,237,0.5); }
+    .dash-content { padding: 28px; flex: 1; }
+
+    /* ── Stats ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+    }
+    .stat-value.purple { background: linear-gradient(90deg, #a78bfa, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stat-value.green  { background: linear-gradient(90deg, #34d399, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stat-value.cyan   { background: linear-gradient(90deg, #06b6d4, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* ── Card ── */
+    .dash-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .dash-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .dash-card-header h2 { font-size: 16px; font-weight: 700; margin: 0; }
+
+    /* ── Table ── */
+    .dash-table-wrap { overflow-x: auto; }
+    .dash-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .dash-table th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      white-space: nowrap;
+    }
+    .dash-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      vertical-align: middle;
+    }
+    .dash-table tr:hover td { background: rgba(255,255,255,0.015); }
+    .dash-table tr:last-child td { border-bottom: none; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .badge.active   { background: rgba(52,211,153,0.12); color: #34d399; }
+    .badge.drawn    { background: rgba(245,158,11,0.12); color: #f59e0b; }
+    .badge.closed   { background: rgba(156,163,175,0.12); color: #9ca3af; }
+    .badge.sold_out { background: rgba(6,182,212,0.12); color: #06b6d4; }
+
+    /* ── Action buttons ── */
+    .btn-act {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .12s, color .12s;
+      font-family: inherit;
+    }
+    .btn-act:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+    .btn-act.primary { background: rgba(124,58,237,0.1); color: var(--accent-light); border-color: rgba(124,58,237,0.2); }
+    .btn-act.primary:hover { background: rgba(124,58,237,0.18); }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .empty-icon { font-size: 56px; margin-bottom: 16px; }
+    .empty-title { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+    .empty-desc { font-size: 14px; color: var(--muted); margin-bottom: 28px; line-height: 1.7; }
+
+    /* ── Limit info ── */
+    .limit-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .limit-bar strong { color: var(--text); }
+    .limit-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      overflow: hidden;
+      max-width: 160px;
+    }
+    .limit-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--cyan));
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .dash-sidebar { transform: translateX(-100%); transition: transform .25s; }
+      .dash-sidebar.open { transform: translateX(0); }
+      .dash-main { margin-left: 0; }
+      .dash-content { padding: 16px; }
+      .dash-topbar { padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="dash-layout">
+
+  <!-- ── Sidebar ── -->
+  <nav class="dash-sidebar" id="dashSidebar">
+    <div class="dash-brand">🎟 Sorteios</div>
+    <div class="dash-nav">
+      <div class="dash-nav-section">Menu</div>
+      <a href="/dashboard" class="active">
+        <span class="icon">📊</span> Dashboard
+      </a>
+      <a href="/dashboard/sorteios/novo">
+        <span class="icon">➕</span> Novo Sorteio
+      </a>
+      <div class="dash-nav-section">Links</div>
+      <a href="/admin" target="_blank">
+        <span class="icon">↗</span> Painel Admin
+      </a>
+    </div>
+    <div class="dash-sidebar-footer">
+      <div class="dash-user">
+        <div class="dash-user-avatar">{{ user.name[0]|upper }}</div>
+        <div class="dash-user-info">
+          <div class="dash-user-name">{{ user.name }}</div>
+          <div class="dash-user-email">{{ user.email }}</div>
+        </div>
+      </div>
+      <form method="get" action="/logout">
+        <button type="submit" class="dash-logout-btn">← Sair</button>
+      </form>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <div class="dash-main">
+    <header class="dash-topbar">
+      <h1>Olá, <span>{{ user.name.split()[0] }}</span> 👋</h1>
+      <a href="/dashboard/sorteios/novo" class="btn-new">
+        <span>➕</span> Criar sorteio
+      </a>
+    </header>
+
+    <main class="dash-content">
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total de sorteios</div>
+          <div class="stat-value purple">{{ global_stats.total }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Ativos</div>
+          <div class="stat-value green">{{ global_stats.active }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Limite disponível</div>
+          <div class="stat-value cyan">{{ user.max_raffles - global_stats.total }}</div>
+        </div>
+      </div>
+
+      <!-- Campaigns table -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <h2>Meus Sorteios</h2>
+          <div class="limit-bar">
+            <span><strong>{{ global_stats.total }}</strong> / {{ user.max_raffles }} sorteios</span>
+            <div class="limit-track">
+              {% if user.max_raffles > 0 %}
+              <div class="limit-fill" style="width: {{ [(global_stats.total / user.max_raffles * 100)|int, 100]|min }}%"></div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        {% if campaigns %}
+        <div class="dash-table-wrap">
+          <table class="dash-table">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Status</th>
+                <th>Meta</th>
+                <th>Cotas vendidas</th>
+                <th>Receita (pago)</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in campaigns %}
+              {% set st = stats_map.get(c.id, {}) %}
+              <tr>
+                <td>
+                  <div style="font-weight:600;">{{ c.title }}</div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:2px;">/r/{{ c.slug }}</div>
+                </td>
+                <td>
+                  <span class="badge {{ c.status }}">{{ c.status | status_pt }}</span>
+                </td>
+                <td>R$ {{ "%.2f"|format(c.goal_amount) }}</td>
+                <td>
+                  {{ st.get('reserved', 0) + st.get('paid', 0) }} / {{ st.get('total', 0) }}
+                </td>
+                <td style="color:#34d399;font-weight:600;">
+                  R$ {{ "%.2f"|format(st.get('revenue_paid', 0)) }}
+                </td>
+                <td>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <a href="{{ base_url }}/r/{{ c.slug }}" target="_blank" class="btn-act">↗ Ver público</a>
+                    <a href="/dashboard/sorteios/{{ c.id }}" class="btn-act primary">📋 Detalhes</a>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">🎟</div>
+          <div class="empty-title">Nenhum sorteio ainda</div>
+          <p class="empty-desc">
+            Você ainda não criou nenhum sorteio.<br>
+            Clique no botão abaixo para criar o seu primeiro!
+          </p>
+          <a href="/dashboard/sorteios/novo" class="btn-new">
+            <span>➕</span> Criar meu primeiro sorteio
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+// Simple mobile sidebar toggle
+document.addEventListener('DOMContentLoaded', function() {
+  var topbar = document.querySelector('.dash-topbar h1');
+  if (topbar) {
+    topbar.style.cursor = 'pointer';
+    topbar.addEventListener('click', function() {
+      var sb = document.getElementById('dashSidebar');
+      if (sb) sb.classList.toggle('open');
+    });
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Meu Pedido — Sorteios</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="stylesheet" href="/static/css/raffle.css" />
+  <style>
+    .track-page { max-width: 600px; margin: 40px auto; padding: 0 20px 60px; }
+    .track-header { text-align: center; margin-bottom: 32px; }
+    .track-status-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; margin: 0 auto 16px;
+    }
+    .track-status-icon.pending  { background: rgba(245,158,11,0.15); }
+    .track-status-icon.paid     { background: rgba(52,211,153,0.15); }
+    .track-status-icon.cancelled, .track-status-icon.expired { background: rgba(248,113,113,0.12); }
+    .track-title { font-size: 24px; font-weight: 800; margin: 0 0 6px; }
+    .track-subtitle { color: var(--muted); font-size: 14px; }
+    .track-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .track-card h3 { margin: 0 0 16px; font-size: 16px; }
+    .track-info-row {
+      display: flex; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 14px;
+    }
+    .track-info-row:last-child { border-bottom: none; }
+    .track-info-label { color: var(--muted); }
+    .track-info-value { font-weight: 600; text-align: right; }
+    .nums-grid {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
+    }
+    .num-badge {
+      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      color: #fff; font-weight: 800; padding: 8px 14px;
+      border-radius: 8px; font-size: 16px;
+    }
+    .num-badge.paid-num {
+      background: linear-gradient(135deg, #059669, #34d399);
+    }
+    .pix-section { margin-top: 8px; }
+    .pix-qr { display: flex; justify-content: center; margin-bottom: 14px; }
+    .pix-qr img { width: 200px; height: 200px; border-radius: 10px; background: #fff; padding: 8px; }
+    .pix-payload-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
+    .pix-payload-inp {
+      flex: 1; font-size: 11px; font-family: monospace; padding: 9px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px; color: var(--muted); overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .expires-warn {
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 8px; padding: 12px; font-size: 13px; color: #fbbf24;
+      text-align: center; margin-top: 12px;
+    }
+    .paid-banner {
+      background: linear-gradient(135deg, rgba(5,150,105,0.15), rgba(52,211,153,0.08));
+      border: 1px solid rgba(52,211,153,0.25);
+      border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px;
+    }
+    .paid-banner h3 { color: #34d399; margin: 0 0 6px; }
+    .paid-banner p { color: var(--muted); font-size: 13px; margin: 0; }
+    .cancel-banner {
+      background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2);
+      border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px;
+    }
+    .cancel-banner h3 { color: #f87171; margin: 0 0 6px; }
+    .cancel-banner p { color: var(--muted); font-size: 13px; margin: 0; }
+    .share-post { text-align: center; }
+    .share-post p { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+    .btn-back { display: block; text-align: center; margin-top: 24px; }
+    .countdown-inline {
+      font-weight: 700; color: #fbbf24; font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+<div class="track-page">
+
+  <!-- Back -->
+  <a href="/r/{{ order.campaign.slug }}" style="color:var(--muted);font-size:13px;text-decoration:none;display:inline-block;margin-bottom:20px;">
+    ← Voltar ao sorteio
+  </a>
+
+  <!-- Header -->
+  <div class="track-header">
+    {% if order.status == 'paid' %}
+    <div class="track-status-icon paid">✅</div>
+    <h1 class="track-title" style="color:#34d399">Pagamento Confirmado!</h1>
+    <p class="track-subtitle">Seus números estão garantidos no sorteio.</p>
+    {% elif order.status in ('cancelled', 'expired') %}
+    <div class="track-status-icon cancelled">❌</div>
+    <h1 class="track-title" style="color:#f87171">Reserva Cancelada</h1>
+    <p class="track-subtitle">Esta reserva foi cancelada. Faça uma nova reserva se desejar participar.</p>
+    {% else %}
+    <div class="track-status-icon pending">⏳</div>
+    <h1 class="track-title">Aguardando Pagamento</h1>
+    <p class="track-subtitle">Complete o pagamento via PIX para garantir seus números.</p>
+    {% endif %}
+  </div>
+
+  <!-- Status banners -->
+  {% if order.status == 'paid' %}
+  <div class="paid-banner">
+    <h3>🎉 Parabéns, {{ order.buyer.name.split()[0] if order.buyer else "Participante" }}!</h3>
+    <p>Seus números estão confirmados. Boa sorte no sorteio!</p>
+  </div>
+  {% elif order.status in ('cancelled', 'expired') %}
+  <div class="cancel-banner">
+    <h3>Reserva não disponível</h3>
+    <p>Os números foram liberados para outros participantes.</p>
+  </div>
+  {% endif %}
+
+  <!-- Order Details -->
+  <div class="track-card">
+    <h3>📋 Detalhes do Pedido</h3>
+    <div class="track-info-row">
+      <span class="track-info-label">Sorteio</span>
+      <span class="track-info-value">{{ order.campaign.title if order.campaign else "—" }}</span>
+    </div>
+    <div class="track-info-row">
+      <span class="track-info-label">Comprador</span>
+      <span class="track-info-value">{{ order.buyer.name if order.buyer else "—" }}</span>
+    </div>
+    <div class="track-info-row">
+      <span class="track-info-label">WhatsApp</span>
+      <span class="track-info-value">{{ order.buyer.whatsapp if order.buyer else "—" }}</span>
+    </div>
+    <div class="track-info-row">
+      <span class="track-info-label">Total</span>
+      <span class="track-info-value" style="color:#34d399;font-size:18px;">
+        R$ {{ '%.2f' % order.total_amount }}
+      </span>
+    </div>
+    <div class="track-info-row">
+      <span class="track-info-label">Status</span>
+      <span class="track-info-value">
+        {% if order.status == 'paid' %}
+        <span style="color:#34d399">✅ Pago</span>
+        {% elif order.status == 'pending' %}
+        <span style="color:#fbbf24">⏳ Aguardando pagamento</span>
+        {% elif order.status == 'cancelled' %}
+        <span style="color:#f87171">❌ Cancelado</span>
+        {% elif order.status == 'expired' %}
+        <span style="color:#f87171">⏱️ Expirado</span>
+        {% else %}
+        {{ order.status | status_pt }}
+        {% endif %}
+      </span>
+    </div>
+    <div class="track-info-row">
+      <span class="track-info-label">Reservado em</span>
+      <span class="track-info-value">{{ order.created_at.strftime('%d/%m/%Y %H:%M') if order.created_at else "—" }}</span>
+    </div>
+    {% if order.paid_at %}
+    <div class="track-info-row">
+      <span class="track-info-label">Pago em</span>
+      <span class="track-info-value" style="color:#34d399">{{ order.paid_at.strftime('%d/%m/%Y %H:%M') }}</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Numbers -->
+  <div class="track-card">
+    <h3>🎫 Seus Números ({{ numbers | length }})</h3>
+    <div class="nums-grid">
+      {% for n in numbers %}
+      <span class="num-badge {% if order.status == 'paid' %}paid-num{% endif %}">{{ n }}</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- PIX (only if pending) -->
+  {% if order.status == 'pending' %}
+  <div class="track-card">
+    <h3>💳 Pague com PIX</h3>
+    <div class="pix-section">
+      {% if order.qr_code_base64 %}
+      <div class="pix-qr">
+        <img src="data:image/png;base64,{{ order.qr_code_base64 }}" alt="QR Code PIX" />
+      </div>
+      {% endif %}
+      {% if order.pix_payload %}
+      <p style="color:var(--muted);font-size:12px;margin:0 0 8px;text-align:center;">Ou copie o código PIX abaixo:</p>
+      <div class="pix-payload-wrap">
+        <input class="pix-payload-inp" id="pixInput" value="{{ order.pix_payload }}" readonly />
+        <button class="btn" onclick="copyPix()">Copiar</button>
+      </div>
+      {% else %}
+      <p style="color:var(--muted);font-size:13px;text-align:center;">Entre em contato com o organizador para realizar o pagamento.</p>
+      {% endif %}
+      {% if order.expires_at %}
+      <div class="expires-warn">
+        ⏱️ Reserva expira em: <span class="countdown-inline" id="expiresCountdown">{{ order.expires_at.strftime('%d/%m/%Y %H:%M') }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Share (only if paid) -->
+  {% if order.status == 'paid' %}
+  <div class="track-card share-post">
+    <h3>📣 Compartilhe sua participação!</h3>
+    <p>Convide seus amigos para participar também:</p>
+    <div class="rf-share-row" style="justify-content:center;margin-bottom:12px;">
+      <a class="rf-share-sm whatsapp" id="trackShareWA" href="#" target="_blank" rel="noopener">WhatsApp</a>
+      <a class="rf-share-sm telegram" id="trackShareTG" href="#" target="_blank" rel="noopener">Telegram</a>
+    </div>
+  </div>
+  <script>
+  (function(){
+    var slug = {{ (order.campaign.slug if order.campaign else '') | tojson }};
+    var title = {{ (order.campaign.title if order.campaign else '') | tojson }};
+    var url = {{ base_url | tojson }} + "/r/" + slug;
+    var msg = encodeURIComponent("Já garantí meus números no sorteio " + title + "! Participe também: " + url);
+    var wa = document.getElementById("trackShareWA");
+    var tg = document.getElementById("trackShareTG");
+    if (wa) wa.href = "https://api.whatsapp.com/send?text=" + msg;
+    if (tg) tg.href = "https://t.me/share/url?url=" + encodeURIComponent(url) + "&text=" + msg;
+  })();
+  </script>
+  {% endif %}
+
+  <!-- Back -->
+  <div class="btn-back">
+    <a href="/r/{{ order.campaign.slug if order.campaign else '' }}" class="btn">Voltar ao Sorteio</a>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="rfToast" class="rf-toast hidden"></div>
+
+<script>
+function copyPix() {
+  const inp = document.getElementById("pixInput");
+  if (!inp) return;
+  navigator.clipboard.writeText(inp.value)
+    .then(() => {
+      const t = document.getElementById("rfToast");
+      t.textContent = "Código PIX copiado!";
+      t.className = "rf-toast success";
+      clearTimeout(t._t);
+      t._t = setTimeout(() => t.classList.add("hidden"), 3500);
+    })
+    .catch(() => alert("Não foi possível copiar. Selecione e copie manualmente."));
+}
+
+{% if order.status == 'pending' and order.expires_at %}
+(function() {
+  const target = new Date("{{ order.expires_at.isoformat() }}").getTime();
+  const el = document.getElementById("expiresCountdown");
+  const tick = () => {
+    const diff = target - Date.now();
+    if (diff <= 0) {
+      if (el) el.textContent = "EXPIRADO";
+      return;
+    }
+    const m = Math.floor(diff / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    if (el) el.textContent = `${m}min ${s}s`;
+    setTimeout(tick, 1000);
+  };
+  tick();
+})();
+{% endif %}
+</script>
+</body>
+</html>

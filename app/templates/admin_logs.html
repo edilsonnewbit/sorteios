@@ -1,0 +1,107 @@
+{% extends "admin_base.html" %}
+{% block title %}Logs{% endblock %}
+{% block page_title %}Logs do Sistema{% endblock %}
+{% set active = 'logs' %}
+
+{% block content %}
+<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+
+  <!-- Admin Logs -->
+  <div style="flex:1;min-width:300px;">
+    <div class="adm-card">
+      <h3 style="margin-top:0;">📋 Ações Admin</h3>
+      {% if not admin_logs %}
+      <div class="empty-state">Sem logs.</div>
+      {% else %}
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead><tr><th>Ação</th><th>Detalhes</th><th>IP</th><th>Data</th></tr></thead>
+          <tbody>
+            {% for l in admin_logs %}
+            <tr>
+              <td>
+                <code style="background:rgba(124,58,237,0.1);color:#a78bfa;padding:2px 6px;border-radius:4px;font-size:11px;">{{ l.action }}</code>
+              </td>
+              <td style="font-size:12px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;">
+                {{ l.details or '—' }}
+              </td>
+              <td style="font-size:11px;color:var(--muted);">{{ l.ip_address or '—' }}</td>
+              <td style="font-size:11px;color:var(--muted);white-space:nowrap;">
+                {{ l.created_at.strftime('%d/%m %H:%M') if l.created_at else '—' }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="flex:1;min-width:300px;">
+    <!-- Email Logs -->
+    <div class="adm-card" style="margin-bottom:20px;">
+      <h3 style="margin-top:0;">📧 E-mails Enviados</h3>
+      {% if not email_logs %}
+      <div class="empty-state">Sem e-mails registrados.</div>
+      {% else %}
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead><tr><th>Destinatário</th><th>Assunto</th><th>Status</th><th>Data</th></tr></thead>
+          <tbody>
+            {% for l in email_logs %}
+            <tr>
+              <td style="font-size:12px;">{{ l.recipient or '—' }}</td>
+              <td style="font-size:11px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;">
+                {{ l.subject or '—' }}
+              </td>
+              <td>
+                <span class="status-badge {% if l.status == 'sent' %}paid{% else %}cancelled{% endif %}">
+                  {{ l.status }}
+                </span>
+              </td>
+              <td style="font-size:11px;color:var(--muted);white-space:nowrap;">
+                {{ l.created_at.strftime('%d/%m %H:%M') if l.created_at else '—' }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Backup Logs -->
+    <div class="adm-card">
+      <h3 style="margin-top:0;">💾 Backups</h3>
+      {% if not backup_logs %}
+      <div class="empty-state">Sem backups registrados.</div>
+      {% else %}
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead><tr><th>Arquivo</th><th>Tamanho</th><th>Status</th><th>Data</th></tr></thead>
+          <tbody>
+            {% for l in backup_logs %}
+            <tr>
+              <td style="font-size:12px;font-family:monospace;">{{ l.filename }}</td>
+              <td style="font-size:11px;color:var(--muted);">
+                {% if l.size_bytes %}{{ (l.size_bytes / 1024)|round(1) }} KB{% else %}—{% endif %}
+              </td>
+              <td>
+                <span class="status-badge {% if l.status == 'success' %}paid{% else %}cancelled{% endif %}">
+                  {{ l.status }}
+                </span>
+              </td>
+              <td style="font-size:11px;color:var(--muted);white-space:nowrap;">
+                {{ l.created_at.strftime('%d/%m %H:%M') if l.created_at else '—' }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

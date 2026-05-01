@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ campaign.title }} — Sorteio</title>
+  <meta name="description" content="{{ campaign.description or campaign.title }}" />
+  <meta property="og:title" content="{{ campaign.title }}" />
+  <meta property="og:description" content="{{ campaign.description or 'Participe do sorteio!' }}" />
+  {% if campaign.prize_image_url %}
+  <meta property="og:image" content="{{ base_url }}{{ campaign.prize_image_url }}" />
+  {% endif %}
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="stylesheet" href="/static/css/raffle.css" />
+</head>
+<body>
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+<header class="rf-hero" id="rfHero"
+  {% if campaign.prize_image_url %}
+  style="--hero-img: url('{{ campaign.prize_image_url }}')"
+  {% endif %}>
+  <div class="rf-hero-overlay"></div>
+  <div class="container rf-hero-inner">
+    <a href="/" class="rf-back">← Todos os sorteios</a>
+    <div class="rf-hero-body">
+
+      <!-- Left: text -->
+      <div class="rf-hero-content">
+        {% if campaign.status == 'drawn' %}
+        <span class="rf-status-badge drawn">🏆 Sorteado</span>
+        {% elif campaign.status == 'closed' %}
+        <span class="rf-status-badge closed">Encerrado</span>
+        {% elif campaign.status == 'sold_out' %}
+        <span class="rf-status-badge sold-out">Esgotado</span>
+        {% else %}
+        <span class="rf-status-badge active">🔥 Ativo</span>
+        {% endif %}
+
+        <h1 class="rf-title">{{ campaign.title }}</h1>
+
+        {% if campaign.description %}
+        <p class="rf-subtitle">{{ campaign.description[:200] }}</p>
+        {% endif %}
+
+        <div class="rf-meta-row">
+          <div class="rf-meta-item">
+            <span class="rf-meta-label">Por número</span>
+            <span class="rf-meta-value price">R$ {{ '%.2f' % campaign.price_per_quota }}</span>
+          </div>
+          {% if campaign.prize_value %}
+          <div class="rf-meta-item">
+            <span class="rf-meta-label">Valor do prêmio</span>
+            <span class="rf-meta-value">R$ {{ '%.0f' % campaign.prize_value }}</span>
+          </div>
+          {% endif %}
+          {% if campaign.draw_date %}
+          <div class="rf-meta-item">
+            <span class="rf-meta-label">Data do sorteio</span>
+            <span class="rf-meta-value">{{ campaign.draw_date.strftime('%d/%m/%Y') }}</span>
+          </div>
+          {% endif %}
+          <div class="rf-meta-item">
+            <span class="rf-meta-label">Total de números</span>
+            <span class="rf-meta-value">{{ stats.total }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: product image card -->
+      {% if campaign.prize_image_url %}
+      <div class="rf-hero-img-col">
+        <div class="rf-hero-img-card">
+          <div class="rf-hero-img-glow"></div>
+          <img src="{{ campaign.prize_image_url }}" alt="{{ campaign.title }}" />
+          <div class="rf-hero-img-badge">🎁 Prêmio</div>
+          {% if campaign.prize_value %}
+          <div class="rf-hero-img-value">R$ {{ '%.0f' % campaign.prize_value }}</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</header>
+
+<!-- ── Progress + Urgency ────────────────────────────────────────────────── -->
+<div class="rf-progress-bar-section container">
+  <div class="rf-progress-wrap">
+    <div class="rf-progress-track">
+      <div class="rf-progress-fill" id="progressFill"
+           style="width: {{ [((stats.paid + stats.reserved) / stats.total * 100)|round(1), 100]|min if stats.total else 0 }}%"></div>
+    </div>
+    <div class="rf-progress-stats">
+      <span class="stat-sold"><strong id="statSold">{{ stats.paid + stats.reserved }}</strong> vendidos</span>
+      <span class="stat-pct" id="statPct">{{ [((stats.paid + stats.reserved) / stats.total * 100)|round(1), 100]|min if stats.total else 0 }}%</span>
+      <span class="stat-avail"><strong id="statAvail">{{ stats.available }}</strong> disponíveis</span>
+    </div>
+  </div>
+
+  <!-- Urgency blocks -->
+  {% set sold_pct = ((stats.paid + stats.reserved) / stats.total * 100)|round(1) if stats.total else 0 %}
+  {% if stats.available < 20 and stats.available > 0 %}
+  <div class="rf-urgency last-numbers">
+    ⚡ Apenas <strong>{{ stats.available }}</strong> números disponíveis!
+  </div>
+  {% elif sold_pct >= 75 %}
+  <div class="rf-urgency almost-done">
+    🔥 Mais de {{ sold_pct|round(0)|int }}% dos números já foram reservados!
+  </div>
+  {% elif sold_pct >= 50 %}
+  <div class="rf-urgency popular">
+    🚀 Sorteio em alta! Mais da metade já foi reservada.
+  </div>
+  {% endif %}
+
+  {% if campaign.draw_date %}
+  <div class="rf-countdown-wrap">
+    <span class="rf-countdown-label">Sorteio em:</span>
+    <div class="rf-countdown" id="countdown"
+         data-target="{{ campaign.draw_date.isoformat() }}">
+      <div class="cd-unit"><span id="cd-days">--</span><small>dias</small></div>
+      <div class="cd-sep">:</div>
+      <div class="cd-unit"><span id="cd-hours">--</span><small>h</small></div>
+      <div class="cd-sep">:</div>
+      <div class="cd-unit"><span id="cd-mins">--</span><small>min</small></div>
+      <div class="cd-sep">:</div>
+      <div class="cd-unit"><span id="cd-secs">--</span><small>seg</small></div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Winner Banner ─────────────────────────────────────────────────────── -->
+{% if campaign.status == 'drawn' and campaign.winner_quota_id %}
+<div class="container">
+  <div class="rf-winner-banner" id="winnerBanner">
+    🏆 Sorteio realizado! Carregando vencedor...
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Main Layout ───────────────────────────────────────────────────────── -->
+<div class="container rf-main">
+
+  <!-- Grid panel -->
+  <section class="rf-grid-panel">
+
+    <!-- Toolbar -->
+    <div class="rf-toolbar">
+      <div class="rf-toolbar-left">
+        <h2>Escolha seus números</h2>
+      </div>
+      <div class="rf-toolbar-right">
+        <div class="rf-quick-buy">
+          <label for="quickQty">Compra rápida:</label>
+          <input type="number" id="quickQty" min="1" max="{{ campaign.max_per_person or 10 }}" value="1" placeholder="Qtd" />
+          <button class="btn primary" id="btnQuickBuy">Aleatório</button>
+        </div>
+        <div class="rf-filter-tabs">
+          <button class="rf-ftab active" id="ftab-all"       onclick="setFilter('all')">Todos</button>
+          <button class="rf-ftab"        id="ftab-available"  onclick="setFilter('available')">Livres</button>
+          <button class="rf-ftab"        id="ftab-reserved"   onclick="setFilter('reserved')">Vendidos</button>
+          <button class="rf-ftab"        id="ftab-paid"       onclick="setFilter('paid')">Pagos</button>
+          <button class="rf-ftab"        id="ftab-unpaid"     onclick="setFilter('unpaid')">Não pagos</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="rf-legend">
+      <span><span class="dot available"></span> Disponível</span>
+      <span><span class="dot reserved"></span> Reservado</span>
+      <span><span class="dot paid"></span> Pago</span>
+      <span><span class="dot selected"></span> Selecionado</span>
+    </div>
+
+    <!-- Mode badge (shown only in compact mode) -->
+    <div class="rf-compact-badge hidden" id="rfCompactBadge"></div>
+
+    <!-- Number Grid -->
+    <div class="rf-grid" id="rfGrid">
+      <div class="rf-loading">Carregando números...</div>
+    </div>
+
+    <!-- Pagination (compact mode only) -->
+    <div class="rf-pagination hidden" id="rfPagination">
+      <button class="rf-page-btn" id="rfPagePrev" onclick="changePage(-1)">← Anterior</button>
+      <span id="rfPageInfo"></span>
+      <button class="rf-page-btn" id="rfPageNext" onclick="changePage(1)">Próxima →</button>
+    </div>
+  </section>
+
+  <!-- Cart Sidebar -->
+  <aside class="rf-cart" id="rfCart">
+    <div class="rf-cart-header">
+      <h3>🛒 Carrinho</h3>
+      <span class="rf-cart-count" id="cartCount">0</span>
+    </div>
+
+    <div class="rf-cart-campaign">
+      <strong>{{ campaign.title }}</strong>
+      <div class="rf-cart-price">R$ {{ '%.2f' % campaign.price_per_quota }} por número</div>
+    </div>
+
+    <div class="rf-cart-items" id="cartItems">
+      <div class="rf-cart-empty">Nenhum número selecionado</div>
+    </div>
+
+    <div class="rf-cart-total" id="cartTotal" style="display:none">
+      <span>Total</span>
+      <strong id="cartTotalValue">R$ 0,00</strong>
+    </div>
+
+    <div class="rf-cart-actions">
+      <button class="btn" id="btnClearCart">Limpar</button>
+      <button class="btn primary" id="btnCheckout" disabled>Reservar com PIX</button>
+    </div>
+
+    {% if campaign.max_per_person %}
+    <p class="rf-cart-limit">Limite: {{ campaign.max_per_person }} números por pessoa</p>
+    {% endif %}
+  </aside>
+</div>
+
+<!-- ── Prize Details ─────────────────────────────────────────────────────── -->
+{% if campaign.description or campaign.rules or campaign.prize_value %}
+<div class="container rf-details-section">
+  <div class="rf-details-grid">
+    {% if campaign.description %}
+    <div class="rf-detail-card">
+      <h3>🎁 Sobre o Prêmio</h3>
+      <p>{{ campaign.description }}</p>
+      {% if campaign.prize_value %}
+      <div class="rf-prize-value">Valor estimado: <strong>R$ {{ '%.2f' % campaign.prize_value }}</strong></div>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% if campaign.rules %}
+    <div class="rf-detail-card">
+      <h3>📋 Regras do Sorteio</h3>
+      <div class="rf-rules">{{ campaign.rules }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Share Section ─────────────────────────────────────────────────────── -->
+<div class="container rf-share-section">
+  <h3>📣 Compartilhe e ajude a lotar!</h3>
+  <div class="rf-share-buttons">
+    <a class="rf-share-btn whatsapp" id="shareWhatsApp" href="#" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      WhatsApp
+    </a>
+    <a class="rf-share-btn telegram" id="shareTelegram" href="#" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+      Telegram
+    </a>
+    <a class="rf-share-btn twitter" id="shareTwitter" href="#" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>
+      X / Twitter
+    </a>
+    <button class="rf-share-btn copy" id="btnCopyLink">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      Copiar Link
+    </button>
+    <button class="rf-share-btn story" id="btnStory" onclick="shareStory()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="3"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+      Story
+    </button>
+  </div>
+
+  <div class="rf-share-text">
+    <p class="rf-share-label">Texto pronto para divulgar:</p>
+    <div class="rf-share-msg" id="shareMsg">{{ campaign.title }} — Participe do sorteio! Números a partir de R$ {{ '%.2f' % campaign.price_per_quota }}. Acesse: {{ base_url }}/r/{{ campaign.slug }}</div>
+    <button class="btn" id="btnCopyMsg">Copiar mensagem</button>
+  </div>
+</div>
+
+<!-- ── Checkout Modal ─────────────────────────────────────────────────────── -->
+<div id="modalCheckout" class="rf-modal hidden" role="dialog">
+  <div class="rf-modal-card">
+    <button class="rf-modal-close" id="btnCloseCheckout">×</button>
+    <div id="checkoutStep1" class="checkout-step">
+      <h3>Seus dados</h3>
+      <p class="rf-modal-subtitle">Preencha para reservar seus números</p>
+      <div class="rf-form">
+        <label>Nome completo *</label>
+        <input type="text" id="buyerName" placeholder="Seu nome" maxlength="200" />
+        <label>WhatsApp *</label>
+        <input type="tel" id="buyerWhatsapp" placeholder="(11) 99999-9999" maxlength="20" />
+        <label>E-mail <span class="opt">(para receber confirmação)</span></label>
+        <input type="email" id="buyerEmail" placeholder="seu@email.com" />
+        <label>CPF <span class="opt">(opcional)</span></label>
+        <input type="text" id="buyerCpf" placeholder="000.000.000-00" maxlength="14" />
+      </div>
+      <div id="checkoutError" class="rf-form-error" style="display:none"></div>
+      <div class="rf-form-actions">
+        <button class="btn" id="btnCancelCheckout">Cancelar</button>
+        <button class="btn primary" id="btnConfirmCheckout">
+          Gerar PIX →
+        </button>
+      </div>
+    </div>
+
+    <div id="checkoutStep2" class="checkout-step hidden">
+      <div class="checkout-success-header">
+        <div class="checkout-success-icon">✓</div>
+        <h3>Reserva confirmada!</h3>
+        <p class="rf-modal-subtitle">Agora pague via PIX para garantir seus números</p>
+      </div>
+
+      <div class="rf-pix-box">
+        <div class="rf-qr-wrap" id="qrWrap">
+          <img id="qrCodeImg" src="" alt="QR Code PIX" />
+        </div>
+        <p class="rf-pix-hint">Escaneie o QR Code ou copie o código abaixo</p>
+        <div class="rf-pix-copy">
+          <input type="text" id="pixPayloadInput" readonly />
+          <button class="btn" id="btnCopyPix">Copiar</button>
+        </div>
+        <div class="rf-pix-amount">
+          Total: <strong id="pixAmount"></strong>
+        </div>
+        <div class="rf-pix-expires">
+          ⏱️ Reserva expira em: <strong id="pixExpires"></strong>
+        </div>
+      </div>
+
+      <div class="rf-order-cta">
+        <a id="btnTrackOrder" href="#" class="btn primary" target="_blank">
+          Acompanhar Meu Pedido →
+        </a>
+      </div>
+
+      <!-- Post-purchase share -->
+      <div class="rf-post-share">
+        <p>Compartilhe com seus amigos! 🎉</p>
+        <div class="rf-share-row">
+          <a class="rf-share-sm whatsapp" id="postShareWA" href="#" target="_blank">WhatsApp</a>
+          <a class="rf-share-sm telegram" id="postShareTG" href="#" target="_blank">Telegram</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="checkoutStep3" class="checkout-step hidden checkout-loading">
+      <div class="rf-spinner"></div>
+      <p>Gerando seu PIX...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ─────────────────────────────────────────────────────────────── -->
+<div id="rfToast" class="rf-toast hidden"></div>
+
+<!-- ── Compact grid tooltip ──────────────────────────────────────────────── -->
+<div id="rfNumTooltip" class="rf-num-tooltip"></div>
+
+<!-- Scripts -->
+<script>
+  const CAMPAIGN_ID = {{ campaign.id }};
+  const CAMPAIGN_SLUG = {{ campaign.slug | tojson }};
+  const CAMPAIGN_TITLE = {{ campaign.title | tojson }};
+  const PRICE_PER_QUOTA = {{ campaign.price_per_quota }};
+  const MAX_PER_PERSON = {{ campaign.max_per_person or 10 }};
+  const WINNER_QUOTA_ID = {{ campaign.winner_quota_id or 'null' }};
+  const BASE_URL = {{ base_url | tojson }};
+  const RAFFLE_STATUS = {{ campaign.status | tojson }};
+
+  async function shareStory() {
+    const btn = document.getElementById("btnStory");
+    const storyUrl = BASE_URL + "/r/" + CAMPAIGN_SLUG + "/story.png";
+
+    // Try Web Share API with file (mobile: opens native share sheet → Instagram)
+    if (navigator.canShare) {
+      try {
+        btn.textContent = "⏳ Gerando...";
+        btn.disabled = true;
+        const resp = await fetch(storyUrl);
+        const blob = await resp.blob();
+        const file = new File([blob], CAMPAIGN_TITLE + "-story.png", { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: CAMPAIGN_TITLE,
+            text: "Participe do sorteio! " + BASE_URL + "/r/" + CAMPAIGN_SLUG,
+          });
+          btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="3"/><circle cx="17.5" cy="6.5" r="1"/></svg> Story';
+          btn.disabled = false;
+          return;
+        }
+      } catch (e) {
+        if (e.name !== "AbortError") console.warn("Share API:", e);
+      }
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="3"/><circle cx="17.5" cy="6.5" r="1"/></svg> Story';
+      btn.disabled = false;
+    }
+
+    // Desktop fallback: direct download
+    const a = document.createElement("a");
+    a.href = storyUrl;
+    a.download = CAMPAIGN_TITLE + "-story.png";
+    a.click();
+  }
+</script>
+<script src="/static/js/raffle.js"></script>
+</body>
+</html>

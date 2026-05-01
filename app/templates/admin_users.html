@@ -1,0 +1,172 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Usuários{% endblock %}
+{% block page_title %}
+  Usuários
+  {% if pending_count > 0 %}
+  <span style="
+    display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:50%;
+    background:linear-gradient(135deg,#f59e0b,#f97316);
+    color:#fff;font-size:12px;font-weight:800;
+    margin-left:10px;vertical-align:middle;">{{ pending_count }}</span>
+  {% endif %}
+{% endblock %}
+
+{% block topbar_actions %}
+  <a href="/admin/sorteios/novo" class="btn btn-primary btn-sm">+ Novo Sorteio</a>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/style.css" />
+
+{% if pending_count > 0 %}
+<div class="adm-notice">
+  ⚠️ Há <strong>{{ pending_count }}</strong> cadastro{{ 's' if pending_count > 1 else '' }} aguardando aprovação.
+</div>
+{% endif %}
+
+<div class="adm-card">
+  <div class="adm-card-header">
+    <h2 style="font-size:16px;font-weight:700;">Todos os usuários</h2>
+    <span style="font-size:13px;color:var(--muted);">{{ users|length }} registros</span>
+  </div>
+
+  {% if users %}
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Empresa</th>
+          <th>Status</th>
+          <th>Função</th>
+          <th>Limite de Sorteios</th>
+          <th>Cadastro</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <div style="font-weight:600;">{{ u.name }}</div>
+            {% if u.phone %}<div style="font-size:11px;color:var(--muted);">{{ u.phone }}</div>{% endif %}
+          </td>
+          <td style="font-size:13px;color:var(--muted);">{{ u.email }}</td>
+          <td style="font-size:13px;color:var(--muted);">{{ u.company_name or '—' }}</td>
+          <td>
+            {% if u.status == 'approved' %}
+              <span class="status-badge paid">Aprovado</span>
+            {% elif u.status == 'pending' %}
+              <span class="status-badge pending">Pendente</span>
+            {% elif u.status == 'rejected' %}
+              <span class="status-badge cancelled">Rejeitado</span>
+            {% else %}
+              <span class="status-badge approved">{{ u.status | status_pt }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.role == 'admin' %}
+              <span style="font-size:12px;font-weight:700;color:var(--accent-light);">Admin</span>
+            {% else %}
+              <span style="font-size:12px;color:var(--muted);">Organizador</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.role != 'admin' %}
+            <form method="post" action="/admin/usuarios/{{ u.id }}/limite"
+                  style="display:flex;align-items:center;gap:6px;">
+              <input type="number" name="max_raffles" value="{{ u.max_raffles }}"
+                     min="0" max="999"
+                     style="
+                       width:64px;padding:4px 8px;border-radius:6px;
+                       border:1px solid rgba(255,255,255,0.07);
+                       background:rgba(255,255,255,0.04);
+                       color:#e6eef6;font-size:13px;font-family:inherit;
+                       outline:none;">
+              <button type="submit"
+                      style="
+                        padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;
+                        background:rgba(124,58,237,0.12);color:#a78bfa;
+                        border:1px solid rgba(124,58,237,0.25);cursor:pointer;
+                        font-family:inherit;transition:background .12s;">Salvar</button>
+            </form>
+            {% else %}
+            <span style="font-size:12px;color:var(--muted);">ilimitado</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--muted);">
+            {{ u.created_at.strftime('%d/%m/%Y') if u.created_at else '—' }}
+          </td>
+          <td>
+            <div class="adm-actions">
+              {% if u.status == 'pending' %}
+                <form method="post" action="/admin/usuarios/{{ u.id }}/aprovar">
+                  <button type="submit" class="btn-sm btn-success"
+                          style="
+                            padding:5px 12px;border-radius:7px;font-size:12px;font-weight:700;
+                            background:rgba(52,211,153,0.1);color:#34d399;
+                            border:1px solid rgba(52,211,153,0.2);cursor:pointer;
+                            font-family:inherit;transition:background .12s;">
+                    ✓ Aprovar
+                  </button>
+                </form>
+                <form method="post" action="/admin/usuarios/{{ u.id }}/rejeitar">
+                  <button type="submit" class="btn-sm btn-danger"
+                          style="
+                            padding:5px 12px;border-radius:7px;font-size:12px;font-weight:700;
+                            background:rgba(248,113,113,0.08);color:#f87171;
+                            border:1px solid rgba(248,113,113,0.2);cursor:pointer;
+                            font-family:inherit;transition:background .12s;"
+                          onclick="return confirm('Rejeitar o cadastro de {{ u.name }}?')">
+                    ✗ Rejeitar
+                  </button>
+                </form>
+              {% elif u.status == 'approved' and u.role != 'admin' %}
+                <form method="post" action="/admin/usuarios/{{ u.id }}/rejeitar">
+                  <button type="submit"
+                          style="
+                            padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;
+                            background:rgba(248,113,113,0.06);color:#f87171;
+                            border:1px solid rgba(248,113,113,0.15);cursor:pointer;
+                            font-family:inherit;transition:background .12s;"
+                          onclick="return confirm('Suspender o acesso de {{ u.name }}?')">
+                    Suspender
+                  </button>
+                </form>
+              {% elif u.status == 'rejected' %}
+                <form method="post" action="/admin/usuarios/{{ u.id }}/aprovar">
+                  <button type="submit"
+                          style="
+                            padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;
+                            background:rgba(52,211,153,0.08);color:#34d399;
+                            border:1px solid rgba(52,211,153,0.15);cursor:pointer;
+                            font-family:inherit;transition:background .12s;">
+                    Reativar
+                  </button>
+                </form>
+              {% else %}
+                <span style="font-size:12px;color:var(--muted);">—</span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:60px 20px;color:var(--muted);">
+    <div style="font-size:48px;margin-bottom:16px;">👤</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px;color:#e6eef6;">Nenhum usuário cadastrado</div>
+    <div style="font-size:14px;">Quando organizadores se cadastrarem, aparecerão aqui.</div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.btn-sm:hover { opacity: .85; }
+</style>
+{% endblock %}

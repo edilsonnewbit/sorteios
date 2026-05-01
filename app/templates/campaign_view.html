@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{{ campaign.title }} — Sorteio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero-inner container">
+        <div class="hero-text">
+          <a href="/" class="back-link">← Todos os sorteios</a>
+          <h1>{{ campaign.title }}</h1>
+          <p class="subtitle">
+            Cota: <strong>R$ {{ '%.2f' % campaign.price_per_quota }}</strong>
+            &nbsp;•&nbsp; Meta: <strong>R$ {{ '%.0f' % campaign.goal_amount }}</strong>
+            {% if campaign.draw_date %}
+            &nbsp;•&nbsp; Sorteio: <strong>{{ campaign.draw_date.strftime('%d/%m/%Y') }}</strong>
+            {% endif %}
+            {% if campaign.status == 'drawn' %}
+            &nbsp;•&nbsp; <span class="badge-drawn">Sorteado</span>
+            {% endif %}
+          </p>
+          <div class="progress-wrap" id="progressWrap" style="display:none">
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="progress-label" id="progressLabel"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="main container">
+      <section class="campaigns-panel">
+        {% if campaign.status == 'drawn' and campaign.winner_quota_id %}
+        <div class="winner-banner" id="winnerBanner">
+          Sorteio realizado! Vencedor sendo carregado...
+        </div>
+        {% endif %}
+        <div class="panel-header">
+          <h2>Escolha seus números</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" id="btn-filter" onclick="toggleFilter()">Mostrar disponíveis</button>
+          </div>
+        </div>
+        <div class="grid" id="grid-{{ campaign.id }}">
+          <div class="loading-spinner">Carregando cotas...</div>
+        </div>
+      </section>
+
+      <aside class="cart-panel">
+        <h3>Seu carrinho</h3>
+        <div class="campaign-info-mini">
+          <strong>{{ campaign.title }}</strong>
+          <div class="campaign-meta">R$ {{ '%.2f' % campaign.price_per_quota }} por cota</div>
+        </div>
+        <div id="cartItems" class="cart-items">Nenhuma cota selecionada</div>
+        <div class="cart-total" id="cartTotal" style="display:none">
+          Total: <strong id="cartTotalValue">R$ 0,00</strong>
+        </div>
+        <div class="cart-actions">
+          <button id="btn-clear" class="btn">Limpar</button>
+          <button id="btn-checkout" class="btn primary">Pagar com PIX</button>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Modal QR -->
+    <div id="modalQR" class="modal hidden" role="dialog" aria-modal="true" aria-label="Pagamento PIX">
+      <div class="modal-card">
+        <h3>Pagamento PIX</h3>
+        <p class="muted" style="font-size:13px">Escaneie o QR ou copie o código PIX</p>
+        <div id="qrArea" class="qr-area"></div>
+        <div class="pix-copy-wrap" id="pixCopyWrap" style="display:none">
+          <input id="pixPayload" class="pix-input" readonly />
+          <button class="btn" onclick="copyPix()">Copiar</button>
+        </div>
+        <p class="muted" style="font-size:12px;margin-top:8px">Valor: <strong id="pixAmount"></strong></p>
+        <div class="form-actions" style="margin-top:16px">
+          <button id="btn-close-qr" class="btn">Fechar</button>
+        </div>
+        <p class="muted" style="font-size:11px;margin-top:8px;text-align:center">
+          O pagamento será confirmado pelo organizador após a verificação.
+        </p>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script>
+      const CAMPAIGN_ID = {{ campaign.id }};
+      const PRICE_PER_QUOTA = {{ campaign.price_per_quota }};
+      const CAMPAIGN_TITLE = {{ campaign.title | tojson }};
+      const WINNER_QUOTA_ID = {{ campaign.winner_quota_id or 'null' }};
+    </script>
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

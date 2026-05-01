@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ campaign.title }} — Sorteios</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep: #020617;
+      --bg-sidebar: #050e1f;
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+      --cyan: #06b6d4;
+      --text: #e6eef6;
+      --muted: #9aa4b2;
+      --border: rgba(255,255,255,0.05);
+      --sidebar-w: 250px;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg-deep); color: var(--text); min-height: 100vh; }
+    a { text-decoration: none; color: inherit; }
+    .dash-layout { display: flex; min-height: 100vh; }
+    .dash-sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 50;
+      overflow-y: auto;
+    }
+    .dash-brand {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 18px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #a78bfa, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .dash-nav { flex: 1; padding: 12px 10px; }
+    .dash-nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 500;
+      transition: background .12s, color .12s;
+      margin-bottom: 2px;
+    }
+    .dash-nav a:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .dash-nav a.active { background: rgba(124,58,237,0.15); color: var(--accent-light); font-weight: 600; }
+    .dash-nav a .icon { font-size: 16px; width: 20px; text-align: center; }
+    .dash-sidebar-footer { padding: 14px 16px; border-top: 1px solid var(--border); }
+    .dash-logout-btn {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      background: rgba(248,113,113,0.06);
+      border: 1px solid rgba(248,113,113,0.15);
+      cursor: pointer;
+      font-family: inherit;
+      text-align: left;
+      transition: background .15s, color .15s;
+    }
+    .dash-logout-btn:hover { background: rgba(248,113,113,0.12); color: #f87171; }
+    .dash-main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+    .dash-topbar {
+      background: rgba(5,14,31,0.8);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    .dash-topbar h1 { font-size: 18px; font-weight: 700; }
+    .dash-content { padding: 28px; flex: 1; }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 8px; }
+    .stat-value { font-size: 26px; font-weight: 800; }
+    .stat-value.green  { background: linear-gradient(90deg, #34d399, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stat-value.purple { background: linear-gradient(90deg, #a78bfa, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stat-value.cyan   { background: linear-gradient(90deg, #06b6d4, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stat-value.orange { background: linear-gradient(90deg, #f59e0b, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    .dash-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .dash-card h2 { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+    .table-wrap { overflow-x: auto; }
+    .dt {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .dt th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      white-space: nowrap;
+    }
+    .dt td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      vertical-align: middle;
+    }
+    .dt tr:hover td { background: rgba(255,255,255,0.015); }
+    .dt tr:last-child td { border-bottom: none; }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .badge.paid      { background: rgba(52,211,153,0.12); color: #34d399; }
+    .badge.pending   { background: rgba(245,158,11,0.12); color: #fbbf24; }
+    .badge.cancelled, .badge.expired { background: rgba(248,113,113,0.1); color: #f87171; }
+    .badge.active    { background: rgba(52,211,153,0.12); color: #34d399; }
+    .badge.drawn     { background: rgba(245,158,11,0.12); color: #f59e0b; }
+    .badge.closed    { background: rgba(156,163,175,0.12); color: #9ca3af; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .info-item { display: flex; flex-direction: column; gap: 4px; }
+    .info-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    .info-value { font-size: 15px; font-weight: 600; }
+
+    .btn-pub {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-light);
+      border: 1px solid rgba(124,58,237,0.25);
+      background: rgba(124,58,237,0.08);
+      transition: background .12s;
+    }
+    .btn-pub:hover { background: rgba(124,58,237,0.15); }
+
+    @media (max-width: 768px) {
+      .dash-sidebar { transform: translateX(-100%); }
+      .dash-main { margin-left: 0; }
+      .dash-content { padding: 16px; }
+      .info-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="dash-layout">
+
+  <nav class="dash-sidebar">
+    <div class="dash-brand">🎟 Sorteios</div>
+    <div class="dash-nav">
+      <a href="/dashboard"><span class="icon">📊</span> Dashboard</a>
+      <a href="/dashboard/sorteios/novo"><span class="icon">➕</span> Novo Sorteio</a>
+    </div>
+    <div class="dash-sidebar-footer">
+      <form method="get" action="/logout">
+        <button type="submit" class="dash-logout-btn">← Sair</button>
+      </form>
+    </div>
+  </nav>
+
+  <div class="dash-main">
+    <header class="dash-topbar">
+      <h1>{{ campaign.title }}</h1>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <a href="{{ base_url }}/r/{{ campaign.slug }}" target="_blank" class="btn-pub">↗ Ver público</a>
+        <a href="/dashboard" style="font-size:13px;color:var(--muted);">← Dashboard</a>
+      </div>
+    </header>
+
+    <main class="dash-content">
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total de cotas</div>
+          <div class="stat-value purple">{{ stats.total }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pagas</div>
+          <div class="stat-value green">{{ stats.paid }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Reservadas</div>
+          <div class="stat-value orange">{{ stats.reserved }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Receita (pago)</div>
+          <div class="stat-value green">R$ {{ "%.2f"|format(stats.revenue_paid) }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Conversão</div>
+          <div class="stat-value cyan">{{ stats.conversion_rate }}%</div>
+        </div>
+      </div>
+
+      <!-- Campaign info -->
+      <div class="dash-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+          <h2 style="margin:0;">Detalhes do sorteio</h2>
+          <span class="badge {{ campaign.status }}">{{ campaign.status | status_pt }}</span>
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Slug / Link</span>
+            <span class="info-value" style="color:var(--accent-light);">/r/{{ campaign.slug }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Meta de arrecadação</span>
+            <span class="info-value">R$ {{ "%.2f"|format(campaign.goal_amount) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Valor por cota</span>
+            <span class="info-value">R$ {{ "%.2f"|format(campaign.price_per_quota) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Data do sorteio</span>
+            <span class="info-value">
+              {% if campaign.draw_date %}{{ campaign.draw_date.strftime('%d/%m/%Y %H:%M') }}
+              {% else %}—{% endif %}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Chave PIX</span>
+            <span class="info-value">{{ campaign.pix_key or '—' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Criado em</span>
+            <span class="info-value">{{ campaign.created_at.strftime('%d/%m/%Y') if campaign.created_at else '—' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders -->
+      <div class="dash-card">
+        <h2>Últimos pedidos</h2>
+        {% if orders %}
+        <div class="table-wrap">
+          <table class="dt">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Comprador</th>
+                <th>Números</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for o in orders %}
+              <tr>
+                <td style="color:var(--muted);font-size:12px;">{{ o.id }}</td>
+                <td>
+                  {% if o.buyer %}
+                  <div style="font-weight:600;">{{ o.buyer.name }}</div>
+                  <div style="font-size:11px;color:var(--muted);">{{ o.buyer.whatsapp }}</div>
+                  {% else %}—{% endif %}
+                </td>
+                <td style="font-family:monospace;font-size:12px;">
+                  {{ o.items|map(attribute='quota')|selectattr('number')|map(attribute='number')|sort|join(', ') }}
+                </td>
+                <td style="font-weight:600;">R$ {{ "%.2f"|format(o.total_amount) }}</td>
+                <td>
+                  <span class="badge {{ o.status }}">{{ o.status | status_pt }}</span>
+                </td>
+                <td style="font-size:12px;color:var(--muted);">
+                  {{ o.created_at.strftime('%d/%m/%Y %H:%M') if o.created_at else '—' }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:40px 20px;color:var(--muted);">
+          <div style="font-size:40px;margin-bottom:12px;">📭</div>
+          <div>Nenhum pedido ainda</div>
+        </div>
+        {% endif %}
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,122 @@
+{% extends "admin_base.html" %}
+{% block title %}Pedidos{% endblock %}
+{% block page_title %}Gestão de Pedidos{% endblock %}
+{% set active = 'pedidos' %}
+
+{% block topbar_actions %}
+<a href="/admin/exportar/csv" class="btn btn-sm">📥 Exportar CSV</a>
+<form method="post" action="/api/admin/cancel-expired" style="margin:0">
+  <button class="btn btn-sm" type="submit">🗑 Cancelar expirados</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="adm-card" style="padding:16px;margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+    <div class="adm-field" style="flex:1;min-width:160px;">
+      <label>Sorteio</label>
+      <select name="campaign_id">
+        <option value="">Todos</option>
+        {% for c in campaigns %}
+        <option value="{{ c.id }}" {% if filter_campaign == c.id %}selected{% endif %}>{{ c.title[:40] }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="adm-field" style="flex:1;min-width:120px;">
+      <label>Status</label>
+      <select name="status">
+        <option value="">Todos</option>
+        <option value="pending" {% if filter_status == 'pending' %}selected{% endif %}>Pendente</option>
+        <option value="paid" {% if filter_status == 'paid' %}selected{% endif %}>Pago</option>
+        <option value="cancelled" {% if filter_status == 'cancelled' %}selected{% endif %}>Cancelado</option>
+        <option value="expired" {% if filter_status == 'expired' %}selected{% endif %}>Expirado</option>
+      </select>
+    </div>
+    <button type="submit" class="btn primary">Filtrar</button>
+    <a href="/admin/pedidos" class="btn">Limpar</a>
+  </form>
+</div>
+
+<div class="adm-card">
+  {% if not orders_data %}
+  <div class="empty-state">Nenhum pedido encontrado.</div>
+  {% else %}
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Comprador</th>
+          <th>Números</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Criado</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in orders_data %}
+        {% set o = item.order %}
+        {% set nums = item.numbers %}
+        <tr>
+          <td style="color:var(--muted);font-size:12px;">#{{ o.id }}</td>
+          <td>
+            <strong>{{ o.buyer.name if o.buyer else '—' }}</strong>
+            {% if o.buyer and o.buyer.whatsapp %}
+            <div style="font-size:11px;color:var(--muted);">{{ o.buyer.whatsapp }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;max-width:200px;">
+              {% for n in nums[:8] %}
+              <span style="background:rgba(124,58,237,0.12);color:#a78bfa;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700;">{{ n }}</span>
+              {% endfor %}
+              {% if nums|length > 8 %}
+              <span style="color:var(--muted);font-size:11px;">+{{ nums|length - 8 }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td style="font-weight:700;">R$ {{ '%.2f' % o.total_amount }}</td>
+          <td><span class="status-badge {{ o.status }}">{{ o.status | status_pt }}</span></td>
+          <td style="color:var(--muted);font-size:12px;white-space:nowrap;">
+            {{ o.created_at.strftime('%d/%m/%Y %H:%M') if o.created_at else '—' }}
+          </td>
+          <td>
+            <div class="adm-actions">
+              <a href="/pedido/{{ o.token }}" target="_blank" class="btn btn-sm">↗</a>
+              {% if o.status == 'pending' %}
+              <form method="post" action="/admin/pedidos/{{ o.id }}/confirmar" style="display:inline">
+                <button class="btn btn-sm btn-success" type="submit">✓ Pago</button>
+              </form>
+              <form method="post" action="/admin/pedidos/{{ o.id }}/cancelar"
+                    onsubmit="return confirm('Cancelar este pedido?')" style="display:inline">
+                <button class="btn btn-sm btn-danger" type="submit">✗ Cancelar</button>
+              </form>
+              {% endif %}
+              {% if o.buyer and o.buyer.email %}
+              <button class="btn btn-sm" onclick="resendEmail({{ o.id }})">📧</button>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function resendEmail(orderId) {
+  if (!confirm("Reenviar e-mail de confirmação?")) return;
+  try {
+    const r = await fetch(`/admin/pedidos/${orderId}/reenviar-email`, { method: "POST" });
+    const d = await r.json();
+    alert(d.ok ? "✅ E-mail reenviado!" : "Erro: " + d.error);
+  } catch(e) { alert("Erro: " + e.message); }
+}
+</script>
+{% endblock %}

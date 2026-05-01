@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Admin — Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div style="max-width:420px;margin:80px auto;background:rgba(11,18,32,0.6);padding:28px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)">
+        <h2 style="margin-top:0">Acesso Admin</h2>
+        {% if error %}
+        <div class="form-error" style="display:block;margin-bottom:12px">{{ error }}</div>
+        {% endif %}
+        <form method="post" action="/admin/login" class="form">
+          <label class="field-label">Senha</label>
+          <input name="password" type="password" placeholder="Digite a senha" autofocus required />
+          <div style="margin-top:12px">
+            <button class="btn primary" type="submit" style="width:100%">Entrar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

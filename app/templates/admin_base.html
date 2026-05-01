@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}Admin{% endblock %} — Sorteios</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    :root { --sidebar-w: 240px; }
+    .adm-layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .adm-sidebar {
+      width: var(--sidebar-w);
+      background: #050e1f;
+      border-right: 1px solid rgba(255,255,255,0.05);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 50;
+      overflow-y: auto;
+    }
+    .adm-brand {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 18px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #a78bfa, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .adm-nav { flex: 1; padding: 12px 10px; }
+    .adm-nav-section {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: rgba(154,164,178,0.5);
+      padding: 12px 10px 6px;
+    }
+    .adm-nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: #9aa4b2;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background .12s, color .12s;
+      margin-bottom: 2px;
+    }
+    .adm-nav a:hover { background: rgba(255,255,255,0.04); color: #e6eef6; }
+    .adm-nav a.active { background: rgba(124,58,237,0.15); color: #a78bfa; font-weight: 600; }
+    .adm-nav a .icon { font-size: 16px; width: 20px; text-align: center; }
+
+    .adm-sidebar-footer {
+      padding: 14px 16px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .adm-sidebar-footer a, .adm-sidebar-footer form button {
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      padding: 0;
+      text-align: left;
+      transition: color .15s;
+    }
+    .adm-sidebar-footer a:hover, .adm-sidebar-footer form button:hover { color: #e6eef6; }
+
+    /* ── Main ── */
+    .adm-main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .adm-topbar {
+      background: rgba(5,14,31,0.8);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    .adm-topbar h1 { margin: 0; font-size: 18px; font-weight: 700; }
+    .adm-topbar-actions { display: flex; gap: 8px; align-items: center; }
+    .adm-content { padding: 28px; flex: 1; }
+
+    /* ── Stats Cards ── */
+    .adm-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .adm-stat-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .adm-stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 8px; }
+    .adm-stat-value { font-size: 28px; font-weight: 800; }
+    .adm-stat-value.green { background: linear-gradient(90deg, #34d399, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .adm-stat-value.purple { background: linear-gradient(90deg, #a78bfa, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .adm-stat-value.cyan { background: linear-gradient(90deg, #06b6d4, #0ea5e9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .adm-stat-value.orange { background: linear-gradient(90deg, #f59e0b, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* ── Tables ── */
+    .adm-table-wrap { overflow-x: auto; }
+    .adm-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .adm-table th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      white-space: nowrap;
+    }
+    .adm-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      vertical-align: middle;
+    }
+    .adm-table tr:hover td { background: rgba(255,255,255,0.015); }
+    .adm-table tr:last-child td { border-bottom: none; }
+
+    /* ── Cards ── */
+    .adm-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .adm-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .adm-card-header h2, .adm-card-header h3 { margin: 0; }
+
+    /* ── Status badges ── */
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .status-badge.active    { background: rgba(52,211,153,0.12); color: #34d399; }
+    .status-badge.drawn     { background: rgba(245,158,11,0.12); color: #f59e0b; }
+    .status-badge.closed    { background: rgba(156,163,175,0.12); color: #9ca3af; }
+    .status-badge.pending   { background: rgba(245,158,11,0.12); color: #fbbf24; }
+    .status-badge.paid      { background: rgba(52,211,153,0.12); color: #34d399; }
+    .status-badge.cancelled, .status-badge.expired { background: rgba(248,113,113,0.1); color: #f87171; }
+
+    /* ── Alert / notice ── */
+    .adm-notice {
+      background: rgba(6,182,212,0.08);
+      border: 1px solid rgba(6,182,212,0.2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #67e8f9;
+      margin-bottom: 16px;
+    }
+    .adm-error {
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #f87171;
+      margin-bottom: 16px;
+    }
+    .adm-success {
+      background: rgba(52,211,153,0.08);
+      border: 1px solid rgba(52,211,153,0.2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #34d399;
+      margin-bottom: 16px;
+    }
+
+    /* ── Forms ── */
+    .adm-form { display: grid; gap: 16px; }
+    .adm-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .adm-field { display: flex; flex-direction: column; gap: 6px; }
+    .adm-field label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .adm-field input, .adm-field textarea, .adm-field select {
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.03);
+      color: #e6eef6;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s;
+      width: 100%;
+    }
+    .adm-field input:focus, .adm-field textarea:focus, .adm-field select:focus { border-color: var(--accent); }
+    .adm-field textarea { resize: vertical; min-height: 80px; }
+    .adm-field select option { background: #081228; }
+    .adm-field small { color: rgba(154,164,178,0.6); font-size: 11px; }
+
+    /* ── Actions row ── */
+    .adm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-danger { background: rgba(248,113,113,0.1); color: #f87171; border-color: rgba(248,113,113,0.2); }
+    .btn-danger:hover { background: rgba(248,113,113,0.2); }
+    .btn-success { background: rgba(52,211,153,0.1); color: #34d399; border-color: rgba(52,211,153,0.2); }
+    .btn-success:hover { background: rgba(52,211,153,0.2); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .adm-sidebar { transform: translateX(-100%); transition: transform .25s; }
+      .adm-sidebar.open { transform: translateX(0); }
+      .adm-main { margin-left: 0; }
+      .adm-content { padding: 16px; }
+      .adm-form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="adm-layout">
+  <!-- Sidebar -->
+  <nav class="adm-sidebar" id="adm-sidebar">
+    <div class="adm-brand">🎟 Sorteios Admin</div>
+    <div class="adm-nav">
+      <div class="adm-nav-section">Geral</div>
+      <a href="/admin/dashboard" class="{% if active == 'dashboard' %}active{% endif %}">
+        <span class="icon">📊</span> Dashboard
+      </a>
+      <div class="adm-nav-section">Sorteios</div>
+      <a href="/admin/sorteios" class="{% if active == 'sorteios' %}active{% endif %}">
+        <span class="icon">🎟</span> Sorteios
+      </a>
+      <a href="/admin/sorteios/novo">
+        <span class="icon">➕</span> Novo Sorteio
+      </a>
+      <div class="adm-nav-section">Comercial</div>
+      <a href="/admin/pedidos" class="{% if active == 'pedidos' %}active{% endif %}">
+        <span class="icon">🛒</span> Pedidos
+      </a>
+      <a href="/admin/compradores" class="{% if active == 'compradores' %}active{% endif %}">
+        <span class="icon">👥</span> Compradores
+      </a>
+      <a href="/admin/estatisticas" class="{% if active == 'stats' %}active{% endif %}">
+        <span class="icon">📈</span> Estatísticas
+      </a>
+      <a href="/admin/exportar/csv">
+        <span class="icon">📥</span> Exportar CSV
+      </a>
+      <div class="adm-nav-section">Organizadores</div>
+      <a href="/admin/usuarios" class="{% if active == 'usuarios' %}active{% endif %}">
+        <span class="icon">👤</span> Usuários
+      </a>
+      <div class="adm-nav-section">Sistema</div>
+      <a href="/admin/backup" class="{% if active == 'backup' %}active{% endif %}">
+        <span class="icon">💾</span> Backup
+      </a>
+      <a href="/admin/logs" class="{% if active == 'logs' %}active{% endif %}">
+        <span class="icon">📋</span> Logs
+      </a>
+      <a href="/admin/configuracoes" class="{% if active == 'config' %}active{% endif %}">
+        <span class="icon">⚙️</span> Configurações
+      </a>
+    </div>
+    <div class="adm-sidebar-footer">
+      <a href="/" target="_blank">↗ Ver site público</a>
+      <form method="post" action="/admin/logout">
+        <button type="submit">← Sair</button>
+      </form>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="adm-main">
+    <header class="adm-topbar">
+      <h1>{% block page_title %}Admin{% endblock %}</h1>
+      <div class="adm-topbar-actions">
+        {% block topbar_actions %}{% endblock %}
+      </div>
+    </header>
+    <main class="adm-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% block scripts %}{% endblock %}
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     DRAW SCREEN — tela cinematográfica de sorteio
+     ════════════════════════════════════════════════════════════════ -->
+<style>
+#drawScreen {
+  display: none;
+  position: fixed; inset: 0; z-index: 9999;
+  background: #000;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+#drawScreen * { box-sizing: border-box; }
+
+/* Background layers */
+.ds-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 70% at 50% 50%,
+    #1a0533 0%, #080f22 55%, #000 100%);
+  transition: background 1.5s ease;
+}
+.ds-bg.winner-bg {
+  background: radial-gradient(ellipse 80% 70% at 50% 50%,
+    #2d1a00 0%, #1a0f00 55%, #000 100%);
+}
+.ds-aurora {
+  position: absolute; inset: 0; pointer-events: none;
+  overflow: hidden;
+}
+.ds-aurora::before, .ds-aurora::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: .18;
+  animation: auroraFloat 8s ease-in-out infinite alternate;
+}
+.ds-aurora::before {
+  width: 600px; height: 400px;
+  left: -10%; top: -10%;
+  background: radial-gradient(circle, #7c3aed, transparent 70%);
+  animation-delay: 0s;
+}
+.ds-aurora::after {
+  width: 500px; height: 350px;
+  right: -10%; bottom: -10%;
+  background: radial-gradient(circle, #06b6d4, transparent 70%);
+  animation-delay: -4s;
+}
+@keyframes auroraFloat {
+  0%   { transform: translate(0,0) scale(1); }
+  50%  { transform: translate(40px, 30px) scale(1.1); }
+  100% { transform: translate(-20px, -20px) scale(.95); }
+}
+
+/* Particles canvas */
+#dsParticles { position: absolute; inset: 0; pointer-events: none; }
+#dsConfetti  { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+
+/* Main content */
+.ds-body {
+  position: relative; z-index: 5;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; padding: 40px 24px;
+  text-align: center;
+}
+
+/* ── Phase: intro ───────────────────────────────── */
+.ds-intro-icon { font-size: 64px; margin-bottom: 12px; }
+.ds-intro-title {
+  font-size: clamp(22px, 4vw, 36px);
+  font-weight: 900; margin: 0 0 8px;
+  background: linear-gradient(90deg, #a78bfa, #06b6d4);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.ds-intro-sub { color: #9aa4b2; font-size: 16px; margin: 0 0 36px; }
+.ds-btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.ds-btn {
+  padding: 13px 32px; border-radius: 12px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05); color: #9aa4b2;
+  transition: background .15s, color .15s;
+}
+.ds-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.ds-btn-primary {
+  background: linear-gradient(135deg, #7c3aed, #06b6d4);
+  color: #fff; border: none;
+  box-shadow: 0 0 40px rgba(124,58,237,.45), 0 4px 20px rgba(0,0,0,.4);
+  transition: transform .15s, box-shadow .15s;
+}
+.ds-btn-primary:hover {
+  transform: scale(1.04);
+  box-shadow: 0 0 60px rgba(124,58,237,.6), 0 4px 28px rgba(0,0,0,.5);
+}
+
+/* ── Phase: spinning ────────────────────────────── */
+.ds-slot-wrap {
+  position: relative; width: min(300px, 72vw); height: min(300px, 72vw);
+  margin: 0 auto 28px;
+}
+.ds-slot-ring {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: linear-gradient(#000, #000) padding-box,
+              linear-gradient(135deg, #7c3aed, #06b6d4, #7c3aed) border-box;
+  animation: dsSpin 3s linear infinite;
+}
+.ds-slot-ring-2 {
+  position: absolute; inset: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(124,58,237,.25);
+  animation: dsSpin 5s linear infinite reverse;
+}
+.ds-glow-core {
+  position: absolute; inset: 24px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,58,237,.25) 0%, transparent 70%);
+  animation: dsGlowPulse 1.4s ease-in-out infinite alternate;
+}
+.ds-number {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(52px, 14vw, 80px);
+  font-weight: 900;
+  letter-spacing: -2px;
+  background: linear-gradient(135deg, #fff 30%, #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-variant-numeric: tabular-nums;
+  transition: filter .05s;
+}
+.ds-number.blur { filter: blur(4px); }
+.ds-spin-label {
+  font-size: 13px; font-weight: 700; letter-spacing: .18em;
+  text-transform: uppercase; color: #9aa4b2;
+  margin-bottom: 8px;
+}
+.ds-spin-status {
+  font-size: 16px; color: #9aa4b2; letter-spacing: .08em;
+  text-transform: uppercase; font-weight: 600;
+  min-height: 24px;
+}
+
+/* ── Phase: winner ──────────────────────────────── */
+.ds-trophy { font-size: 56px; animation: dsTrophyDrop .7s cubic-bezier(.17,.67,.35,1.4); }
+.ds-win-label {
+  font-size: 13px; font-weight: 800; letter-spacing: .2em;
+  text-transform: uppercase; color: #fbbf24; margin: 8px 0 20px;
+  animation: dsFadeUp .5s ease-out;
+}
+.ds-win-number {
+  font-size: clamp(72px, 20vw, 120px);
+  font-weight: 900; letter-spacing: -4px;
+  background: linear-gradient(135deg, #fbbf24, #f97316, #fbbf24, #fde68a, #f97316);
+  background-size: 300% auto;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: dsNumberPop .6s cubic-bezier(.17,.67,.35,1.3),
+             dsGoldShine 3s linear infinite;
+  margin-bottom: 12px;
+}
+.ds-win-name {
+  font-size: clamp(18px, 4vw, 28px); font-weight: 700; color: #fff;
+  margin-bottom: 6px;
+  animation: dsFadeUp .5s ease-out .25s both;
+}
+.ds-win-wpp {
+  font-size: 16px; color: #9aa4b2; margin-bottom: 36px;
+  animation: dsFadeUp .5s ease-out .45s both;
+}
+.ds-win-actions { animation: dsFadeUp .5s ease-out .65s both; }
+
+/* ── Phase: error ───────────────────────────────── */
+.ds-error-icon { font-size: 56px; margin-bottom: 16px; }
+.ds-error-msg { color: #f87171; font-size: 16px; margin-bottom: 24px; }
+
+/* ── Keyframes ──────────────────────────────────── */
+@keyframes dsSpin      { to { transform: rotate(360deg); } }
+@keyframes dsGlowPulse { from { opacity:.4; transform:scale(.88); } to { opacity:1; transform:scale(1.08); } }
+@keyframes dsTrophyDrop{ 0%{transform:translateY(-40px);opacity:0} 70%{transform:translateY(6px)} 100%{transform:translateY(0);opacity:1} }
+@keyframes dsNumberPop { 0%{transform:scale(.2);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+@keyframes dsFadeUp    { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes dsGoldShine { to { background-position: 300% center; } }
+@keyframes dsIntroIn   { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
+</style>
+
+<div id="drawScreen">
+  <div class="ds-bg" id="dsBg"></div>
+  <div class="ds-aurora"></div>
+  <canvas id="dsParticles"></canvas>
+  <canvas id="dsConfetti"></canvas>
+
+  <div class="ds-body">
+
+    <!-- ── Fase: Intro ── -->
+    <div id="dsPhaseIntro" style="animation:dsIntroIn .3s ease-out;">
+      <div class="ds-intro-icon">🎲</div>
+      <div class="ds-intro-title" id="dsIntroTitle">Sorteio</div>
+      <p class="ds-intro-sub">O número vencedor será sorteado ao vivo.</p>
+      <div class="ds-btn-row">
+        <button class="ds-btn" onclick="closeDraw()">Cancelar</button>
+        <button class="ds-btn ds-btn-primary" id="dsBtnStart">▶ Iniciar Sorteio</button>
+      </div>
+    </div>
+
+    <!-- ── Fase: Animação ── -->
+    <div id="dsPhaseAnim" style="display:none;">
+      <div class="ds-spin-label">Sorteando número</div>
+      <div class="ds-slot-wrap">
+        <div class="ds-slot-ring"></div>
+        <div class="ds-slot-ring-2"></div>
+        <div class="ds-glow-core"></div>
+        <div class="ds-number" id="dsNumber">000</div>
+      </div>
+      <div class="ds-spin-status" id="dsSpinStatus">Embaralhando...</div>
+    </div>
+
+    <!-- ── Fase: Vencedor ── -->
+    <div id="dsPhaseWinner" style="display:none;">
+      <div class="ds-trophy">🏆</div>
+      <div class="ds-win-label">✦ Número Vencedor ✦</div>
+      <div class="ds-win-number" id="dsWinNumber">000</div>
+      <div class="ds-win-name" id="dsWinName"></div>
+      <div class="ds-win-wpp" id="dsWinWpp"></div>
+      <div class="ds-win-actions">
+        <button class="ds-btn ds-btn-primary" onclick="closeDraw()">Fechar</button>
+      </div>
+    </div>
+
+    <!-- ── Fase: Erro ── -->
+    <div id="dsPhaseError" style="display:none;">
+      <div class="ds-error-icon">⚠️</div>
+      <div class="ds-error-msg" id="dsErrorMsg">Erro ao realizar sorteio.</div>
+      <button class="ds-btn" onclick="closeDraw()">Fechar</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var drawId = null;
+  var spinTimer = null;
+  var confettiAF = null;
+  var particles = [];
+  var partAF = null;
+  var COLORS = ["#a78bfa","#06b6d4","#fbbf24","#34d399","#f87171","#fb923c","#fff","#e879f9"];
+
+  // ── Public API ──────────────────────────────────────────────────────
+  window.startDraw = function (id, title) {
+    drawId = id;
+    document.getElementById("dsIntroTitle").textContent = title;
+    showPhase("Intro");
+    document.getElementById("dsBg").className = "ds-bg";
+    document.getElementById("drawScreen").style.display = "block";
+    document.body.style.overflow = "hidden";
+    startParticles();
+  };
+
+  window.closeDraw = function () {
+    stopSpin();
+    stopConfetti();
+    stopParticles();
+    document.getElementById("drawScreen").style.display = "none";
+    document.body.style.overflow = "";
+    drawId = null;
+  };
+
+  // ── Phase control ────────────────────────────────────────────────────
+  function showPhase(name) {
+    ["Intro","Anim","Winner","Error"].forEach(function(p){
+      var el = document.getElementById("dsPhase" + p);
+      if (el) el.style.display = (p === name) ? "" : "none";
+    });
+  }
+
+  // ── Start button ─────────────────────────────────────────────────────
+  document.getElementById("dsBtnStart").addEventListener("click", async function () {
+    if (!drawId) return;
+    showPhase("Anim");
+
+    // Fetch winner concurrently with animation
+    var resultPromise = fetch("/admin/draw/" + drawId, { method: "POST" })
+      .then(function(r){ return r.json(); })
+      .catch(function(){ return { ok: false, detail: "Erro de conexão" }; });
+
+    startSpin();
+
+    // Minimum dramatic time: 5 seconds of fast spin
+    await sleep(5000);
+
+    var result = await resultPromise;
+
+    if (!result || !result.ok) {
+      stopSpin();
+      document.getElementById("dsErrorMsg").textContent =
+        result ? (result.detail || "Erro ao sortear") : "Sem resposta do servidor";
+      showPhase("Error");
+      return;
+    }
+
+    // Slowdown sequence
+    document.getElementById("dsSpinStatus").textContent = "Desacelerando...";
+    await slowdownTo(result.number);
+
+    // Switch background
+    document.getElementById("dsBg").className = "ds-bg winner-bg";
+
+    // Show winner
+    document.getElementById("dsWinNumber").textContent =
+      String(result.number).padStart(3, "0");
+    document.getElementById("dsWinName").textContent =
+      result.reserved_by ? "🏅 " + result.reserved_by : "🎉 Número sorteado!";
+    document.getElementById("dsWinWpp").textContent =
+      result.whatsapp ? "📱 " + result.whatsapp : "";
+
+    showPhase("Winner");
+
+    // Triple confetti burst
+    launchConfetti(160);
+    setTimeout(function(){ launchConfetti(120); }, 500);
+    setTimeout(function(){ launchConfetti(100); }, 1100);
+    setTimeout(function(){ launchConfetti(80);  }, 1800);
+  });
+
+  // ── Spin animation ────────────────────────────────────────────────────
+  function startSpin() {
+    var el = document.getElementById("dsNumber");
+    var i = 0;
+    spinTimer = setInterval(function () {
+      var n = Math.floor(Math.random() * 9999) + 1;
+      el.textContent = String(n).padStart(3, "0");
+      el.classList.toggle("blur", i % 3 === 0);
+      i++;
+    }, 55);
+  }
+
+  function stopSpin() {
+    if (spinTimer) { clearInterval(spinTimer); spinTimer = null; }
+    var el = document.getElementById("dsNumber");
+    if (el) el.classList.remove("blur");
+  }
+
+  async function slowdownTo(finalNum) {
+    stopSpin();
+    var el = document.getElementById("dsNumber");
+    var status = document.getElementById("dsSpinStatus");
+    var padded = String(finalNum).padStart(3, "0");
+
+    // Delay sequence: starts fast, ends slow (ms between each number change)
+    var delays = [90,110,140,175,215,260,315,380,460,560,680,820,980,1100];
+
+    for (var i = 0; i < delays.length; i++) {
+      var offset = delays.length - 1 - i;
+      var near;
+      if (offset < 5) {
+        near = ((finalNum - offset + 99997) % 99997) + 1;
+      } else {
+        near = Math.floor(Math.random() * 9999) + 1;
+      }
+      el.textContent = String(near).padStart(3, "0");
+      if (i === 9)  status.textContent = "Quase lá...";
+      if (i === 11) status.textContent = "E o número é...";
+      await sleep(delays[i]);
+    }
+
+    el.textContent = padded;
+    el.classList.remove("blur");
+    await sleep(600);
+  }
+
+  // ── Particles (background stars) ────────────────────────────────────
+  function startParticles() {
+    var canvas = document.getElementById("dsParticles");
+    var ctx = canvas.getContext("2d");
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    var stars = [];
+    for (var i = 0; i < 120; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.5 + 0.3,
+        a: Math.random(),
+        da: (Math.random() - 0.5) * 0.015,
+      });
+    }
+
+    function drawStars() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (var s of stars) {
+        s.a += s.da;
+        if (s.a <= 0 || s.a >= 1) s.da *= -1;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255," + s.a + ")";
+        ctx.fill();
+      }
+      partAF = requestAnimationFrame(drawStars);
+    }
+    drawStars();
+  }
+
+  function stopParticles() {
+    if (partAF) { cancelAnimationFrame(partAF); partAF = null; }
+    var c = document.getElementById("dsParticles");
+    if (c) c.getContext("2d").clearRect(0, 0, c.width, c.height);
+  }
+
+  // ── Confetti ──────────────────────────────────────────────────────────
+  function launchConfetti(count) {
+    var canvas = document.getElementById("dsConfetti");
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    var ctx = canvas.getContext("2d");
+
+    for (var i = 0; i < count; i++) {
+      var fromLeft  = Math.random() < 0.5;
+      var fromRight = !fromLeft && Math.random() < 0.5;
+      var fromTop   = !fromLeft && !fromRight;
+      particles.push({
+        x:   fromLeft  ? -10 : fromRight ? canvas.width + 10 : Math.random() * canvas.width,
+        y:   fromTop   ? -10 : Math.random() * canvas.height * 0.3,
+        vx:  fromLeft  ?  Math.random() * 12 + 4
+           : fromRight ? -(Math.random() * 12 + 4)
+           :              (Math.random() - 0.5) * 10,
+        vy:  Math.random() * 6 + 2,
+        w:   Math.random() * 12 + 6,
+        h:   Math.random() * 6 + 3,
+        rot: Math.random() * 360,
+        rv:  (Math.random() - 0.5) * 12,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        alpha: 1,
+        shape: Math.random() < 0.4 ? "circle" : "rect",
+      });
+    }
+
+    if (!confettiAF) animConf(ctx, canvas);
+  }
+
+  function animConf(ctx, canvas) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles = particles.filter(function(p){ return p.alpha > 0.04; });
+
+    for (var p of particles) {
+      p.x  += p.vx;
+      p.y  += p.vy;
+      p.vy += 0.12;
+      p.vx *= 0.99;
+      p.rot += p.rv;
+      if (p.y > canvas.height * 0.65) p.alpha -= 0.018;
+
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      if (p.shape === "circle") {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      }
+      ctx.restore();
+    }
+
+    if (particles.length > 0) {
+      confettiAF = requestAnimationFrame(function(){ animConf(ctx, canvas); });
+    } else {
+      confettiAF = null;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  function stopConfetti() {
+    if (confettiAF) { cancelAnimationFrame(confettiAF); confettiAF = null; }
+    particles = [];
+    var c = document.getElementById("dsConfetti");
+    if (c) c.getContext("2d").clearRect(0, 0, c.width, c.height);
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────
+  function sleep(ms) { return new Promise(function(r){ setTimeout(r, ms); }); }
+
+  // Close on Escape
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape" && document.getElementById("drawScreen").style.display !== "none")
+      closeDraw();
+  });
+})();
+</script>
+</body>
+</html>

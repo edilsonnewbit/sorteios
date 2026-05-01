@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Entrar — Sorteios</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep: #020617;
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+      --cyan: #06b6d4;
+      --text: #e6eef6;
+      --muted: #9aa4b2;
+      --border: rgba(255,255,255,0.07);
+      --input-bg: rgba(255,255,255,0.04);
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      width: 600px; height: 500px;
+      left: -150px; top: -100px;
+      background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 65%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      width: 500px; height: 400px;
+      right: -100px; bottom: -80px;
+      background: radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 65%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .auth-card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px 36px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .auth-brand {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .auth-logo {
+      font-size: 28px;
+      font-weight: 900;
+      background: linear-gradient(90deg, #a78bfa, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .auth-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .auth-sub {
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .form-field label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+    }
+    .input-wrap {
+      position: relative;
+    }
+    .form-field input {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s, background .15s;
+    }
+    .form-field input:focus {
+      border-color: var(--accent);
+      background: rgba(124,58,237,0.04);
+    }
+    .form-field input[type="password"] { padding-right: 44px; }
+    .btn-eye {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 2px;
+      line-height: 1;
+      transition: color .15s;
+    }
+    .btn-eye:hover { color: var(--text); }
+    .error-msg {
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.2);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #f87171;
+      margin-bottom: 16px;
+    }
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity .15s, transform .15s, box-shadow .15s;
+      box-shadow: 0 0 24px rgba(124,58,237,0.3);
+      margin-top: 4px;
+    }
+    .btn-submit:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 0 36px rgba(124,58,237,0.5); }
+    .auth-footer {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .auth-footer a {
+      font-size: 13px;
+      color: var(--muted);
+      transition: color .15s;
+    }
+    .auth-footer a:hover { color: var(--accent-light); }
+    .auth-footer .sep {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+    }
+    .auth-footer .register-link {
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .auth-footer .register-link a {
+      color: var(--accent-light);
+      font-weight: 600;
+    }
+    .auth-footer .register-link a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="auth-card">
+  <div class="auth-brand">
+    <span class="auth-logo">🎟 Sorteios</span>
+    <div class="auth-title">Entrar na sua conta</div>
+    <div class="auth-sub">Bem-vindo de volta</div>
+  </div>
+
+  {% if error %}
+  <div class="error-msg">{{ error }}</div>
+  {% endif %}
+
+  <form method="post" action="/login">
+    <input type="hidden" name="next" value="{{ next or '' }}">
+    <div class="form-field">
+      <label for="email">E-mail</label>
+      <input type="email" id="email" name="email" placeholder="seu@email.com" required autocomplete="email">
+    </div>
+    <div class="form-field">
+      <label for="password">Senha</label>
+      <div class="input-wrap">
+        <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+        <button type="button" class="btn-eye" onclick="togglePwd()" id="eyeBtn" title="Mostrar/ocultar senha">👁</button>
+      </div>
+    </div>
+    <button type="submit" class="btn-submit">Entrar</button>
+  </form>
+
+  <div class="auth-footer">
+    <a href="#">Esqueceu a senha?</a>
+    <div class="sep"></div>
+    <div class="register-link">Não tem conta? <a href="/register">Cadastre-se</a></div>
+  </div>
+</div>
+
+<script>
+function togglePwd() {
+  var inp = document.getElementById('password');
+  var btn = document.getElementById('eyeBtn');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    btn.textContent = '👁';
+  }
+}
+</script>
+</body>
+</html>

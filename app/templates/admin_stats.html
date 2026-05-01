@@ -1,0 +1,149 @@
+{% extends "admin_base.html" %}
+{% block title %}Estatísticas{% endblock %}
+{% block page_title %}Estatísticas{% endblock %}
+{% set active = 'stats' %}
+
+{% block content %}
+<!-- Filter -->
+<div class="adm-card" style="padding:14px;margin-bottom:16px;">
+  <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+    <div class="adm-field" style="flex:1;min-width:180px;">
+      <label>Filtrar por Sorteio</label>
+      <select name="campaign_id">
+        <option value="">Todos os sorteios</option>
+        {% for c in campaigns %}
+        <option value="{{ c.id }}" {% if selected_campaign_id == c.id %}selected{% endif %}>{{ c.title[:45] }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn primary">Aplicar</button>
+    <a href="/admin/estatisticas" class="btn">Limpar</a>
+    <a href="/admin/exportar/csv{% if selected_campaign_id %}?campaign_id={{ selected_campaign_id }}{% endif %}" class="btn">📥 CSV</a>
+  </form>
+</div>
+
+<!-- Global Stats -->
+<div class="adm-stats">
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Receita Total Paga</div>
+    <div class="adm-stat-value green">R$ {{ '%.2f' % global_stats.total_revenue }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Receita Pendente</div>
+    <div class="adm-stat-value orange">R$ {{ '%.2f' % global_stats.total_pending }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Pedidos Pagos</div>
+    <div class="adm-stat-value green">{{ global_stats.total_paid_orders }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Total de Pedidos</div>
+    <div class="adm-stat-value cyan">{{ global_stats.total_orders }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Compradores</div>
+    <div class="adm-stat-value purple">{{ global_stats.total_buyers }}</div>
+  </div>
+</div>
+
+<!-- Raffle specific stats -->
+{% if raffle_stats %}
+<div class="adm-card">
+  <h3 style="margin-top:0">📊 Estatísticas do Sorteio Selecionado</h3>
+  <div class="adm-stats" style="margin-bottom:0;">
+    <div class="adm-stat-card">
+      <div class="adm-stat-label">Total Números</div>
+      <div class="adm-stat-value purple">{{ raffle_stats.total }}</div>
+    </div>
+    <div class="adm-stat-card">
+      <div class="adm-stat-label">Disponíveis</div>
+      <div class="adm-stat-value cyan">{{ raffle_stats.available }}</div>
+    </div>
+    <div class="adm-stat-card">
+      <div class="adm-stat-label">Reservados</div>
+      <div class="adm-stat-value orange">{{ raffle_stats.reserved }}</div>
+    </div>
+    <div class="adm-stat-card">
+      <div class="adm-stat-label">Pagos</div>
+      <div class="adm-stat-value green">{{ raffle_stats.paid }}</div>
+    </div>
+    <div class="adm-stat-card">
+      <div class="adm-stat-label">Receita Paga</div>
+      <div class="adm-stat-value green">R$ {{ '%.2f' % raffle_stats.revenue_paid }}</div>
+    </div>
+    <div class="adm-stat-card">
+      <div class="adm-stat-label">Conversão</div>
+      <div class="adm-stat-value purple">{{ raffle_stats.conversion_rate }}%</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Sales by day -->
+{% if sales_by_day %}
+<div class="adm-card">
+  <h3 style="margin-top:0;">📅 Vendas por Dia (últimos 30 dias)</h3>
+  <div id="salesChart" style="height:200px;position:relative;overflow:hidden;">
+    {% if sales_by_day %}
+    <div style="display:flex;align-items:flex-end;gap:4px;height:100%;padding:0 8px;">
+      {% set max_rev = namespace(v=1) %}
+      {% for d in sales_by_day %}
+        {% if d.revenue > max_rev.v %}{% set max_rev.v = d.revenue %}{% endif %}
+      {% endfor %}
+      {% for d in sales_by_day %}
+      {% set h = (d.revenue / max_rev.v * 100)|round(1) %}
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:12px;">
+        <div title="{{ d.day }}: R$ {{ '%.2f'|format(d.revenue) }} ({{ d.count }} pedidos)"
+             style="width:100%;height:{{ h }}%;background:linear-gradient(180deg,#7c3aed,#06b6d4);border-radius:4px 4px 0 0;transition:height .3s;cursor:help;min-height:2px;"></div>
+        <div style="font-size:9px;color:var(--muted);transform:rotate(-45deg);white-space:nowrap;">{{ d.day[5:] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  <div class="adm-table-wrap" style="margin-top:20px;">
+    <table class="adm-table">
+      <thead>
+        <tr><th>Data</th><th>Pedidos</th><th>Receita</th></tr>
+      </thead>
+      <tbody>
+        {% for d in sales_by_day | reverse | list %}
+        <tr>
+          <td>{{ d.day }}</td>
+          <td>{{ d.count }}</td>
+          <td>R$ {{ '%.2f' % d.revenue }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Top buyers -->
+{% if top_buyers %}
+<div class="adm-card">
+  <h3 style="margin-top:0;">🏆 Ranking de Compradores</h3>
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr><th>#</th><th>Comprador</th><th>WhatsApp</th><th>Pedidos</th><th>Total Investido</th></tr>
+      </thead>
+      <tbody>
+        {% for b in top_buyers %}
+        <tr>
+          <td style="font-weight:700;color:{% if loop.index == 1 %}#f59e0b{% elif loop.index == 2 %}#9ca3af{% elif loop.index == 3 %}#cd7f32{% else %}var(--muted){% endif %};">
+            {{ loop.index }}{% if loop.index == 1 %} 🥇{% elif loop.index == 2 %} 🥈{% elif loop.index == 3 %} 🥉{% endif %}
+          </td>
+          <td><strong>{{ b.name }}</strong></td>
+          <td style="color:var(--muted);">{{ b.whatsapp }}</td>
+          <td>{{ b.orders }}</td>
+          <td style="color:#34d399;font-weight:700;">R$ {{ '%.2f' % b.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,261 @@
+{% extends "admin_base.html" %}
+{% block title %}{% if campaign %}Editar{% else %}Novo{% endif %} Sorteio{% endblock %}
+{% block page_title %}{% if campaign %}Editar Sorteio{% else %}Novo Sorteio{% endif %}{% endblock %}
+{% set active = 'sorteios' %}
+
+{% block topbar_actions %}
+{% if campaign %}
+<a href="/r/{{ campaign.slug }}" target="_blank" class="btn btn-sm">↗ Ver público</a>
+<a href="/admin/pedidos?campaign_id={{ campaign.id }}" class="btn btn-sm">🛒 Pedidos</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="adm-error">{{ error }}</div>
+{% endif %}
+
+{% if campaign %}
+<!-- Stats -->
+{% if stats %}
+<div class="adm-stats" style="margin-bottom:20px;">
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Total de Números</div>
+    <div class="adm-stat-value purple">{{ stats.total }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Disponíveis</div>
+    <div class="adm-stat-value cyan">{{ stats.available }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Reservados</div>
+    <div class="adm-stat-value orange">{{ stats.reserved }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Pagos</div>
+    <div class="adm-stat-value green">{{ stats.paid }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Receita Paga</div>
+    <div class="adm-stat-value green">R$ {{ '%.2f' % stats.revenue_paid }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Conversão</div>
+    <div class="adm-stat-value purple">{{ stats.conversion_rate }}%</div>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+<div class="adm-card">
+  <form method="post"
+        action="{% if campaign %}/admin/sorteios/{{ campaign.id }}/editar{% else %}/admin/sorteios/novo{% endif %}"
+        enctype="multipart/form-data">
+
+    <div class="adm-form">
+      <!-- Title & Status -->
+      <div class="adm-form-row">
+        <div class="adm-field">
+          <label>Título do Sorteio *</label>
+          <input type="text" name="title" value="{{ campaign.title if campaign else '' }}" required maxlength="200" placeholder="Ex: iPhone 15 Pro Max" />
+        </div>
+        {% if campaign %}
+        <div class="adm-field">
+          <label>Status</label>
+          <select name="status">
+            <option value="active" {% if campaign.status == 'active' %}selected{% endif %}>Ativo</option>
+            <option value="closed" {% if campaign.status == 'closed' %}selected{% endif %}>Encerrado</option>
+            <option value="drawn" {% if campaign.status == 'drawn' %}selected{% endif %}>Sorteado</option>
+          </select>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Description -->
+      <div class="adm-field">
+        <label>Descrição do Prêmio</label>
+        <textarea name="description" rows="3" placeholder="Descreva o prêmio em detalhes...">{{ campaign.description if campaign else '' }}</textarea>
+      </div>
+
+      <!-- Image + Prize Value -->
+      <div class="adm-form-row">
+        <div class="adm-field">
+          <label>Imagem do Prêmio</label>
+          <input type="file" name="prize_image" accept="image/*" />
+          {% if campaign and campaign.prize_image_url %}
+          <div style="margin-top:8px;">
+            <img src="{{ campaign.prize_image_url }}" style="height:60px;border-radius:6px;" alt="Prêmio atual" />
+            <small>Imagem atual. Envie nova para substituir.</small>
+          </div>
+          {% endif %}
+        </div>
+        <div class="adm-field">
+          <label>Valor Estimado do Prêmio (R$)</label>
+          <input type="number" name="prize_value" step="0.01" min="0"
+                 value="{{ campaign.prize_value if campaign and campaign.prize_value else '' }}"
+                 placeholder="Ex: 5000.00" />
+          <small>Exibido na página pública para atrair participantes.</small>
+        </div>
+      </div>
+
+      <!-- Rules -->
+      <div class="adm-field">
+        <label>Regras do Sorteio</label>
+        <textarea name="rules" rows="4" placeholder="Informe as regras...">{{ campaign.rules if campaign else '' }}</textarea>
+      </div>
+
+      <!-- Pricing -->
+      {% if not campaign %}
+      <div class="adm-form-row">
+        <div class="adm-field">
+          <label>Meta Total (R$) *</label>
+          <input type="number" name="goal_amount" step="0.01" min="1" required
+                 placeholder="Ex: 1000.00" />
+          <small>Quantidade de números = Meta ÷ Preço por número</small>
+        </div>
+        <div class="adm-field">
+          <label>Preço por Número (R$) *</label>
+          <input type="number" name="price_per_quota" step="0.01" min="0.01" required
+                 placeholder="Ex: 10.00" />
+        </div>
+      </div>
+      {% else %}
+      <div class="adm-form-row">
+        <div class="adm-field">
+          <label>Preço por Número (R$)</label>
+          <input type="text" value="R$ {{ '%.2f' % campaign.price_per_quota }}" disabled />
+          <small>Não é possível alterar o preço após criação.</small>
+        </div>
+        <div class="adm-field">
+          <label>Meta Total (R$)</label>
+          <input type="number" name="goal_amount" id="goalInput"
+                 step="0.01" min="{{ campaign.goal_amount }}"
+                 value="{{ '%.2f' % campaign.goal_amount }}" />
+          <small id="goalHint" style="color:#9aa4b2;">
+            Atual: {{ stats.total if stats else 0 }} números.
+            Só é possível aumentar a meta.
+          </small>
+        </div>
+      </div>
+      <div id="goalPreview" style="display:none;padding:10px 14px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:8px;font-size:13px;color:#34d399;"></div>
+      <script>
+      (function(){
+        var inp  = document.getElementById("goalInput");
+        var hint = document.getElementById("goalPreview");
+        var price = {{ campaign.price_per_quota }};
+        var currentTotal = {{ stats.total if stats else 0 }};
+        inp.addEventListener("input", function(){
+          var newGoal = parseFloat(inp.value) || 0;
+          var newTotal = Math.floor(newGoal / price);
+          var diff = newTotal - currentTotal;
+          if (diff > 0) {
+            hint.textContent = "✚ " + diff + " números novos serão adicionados (total: " + newTotal + ")";
+            hint.style.display = "";
+          } else if (diff < 0) {
+            hint.textContent = "⚠ A meta não pode ser reduzida.";
+            hint.style.color = "#f87171";
+            hint.style.background = "rgba(248,113,113,0.07)";
+            hint.style.borderColor = "rgba(248,113,113,0.2)";
+            hint.style.display = "";
+          } else {
+            hint.style.display = "none";
+          }
+        });
+      })();
+      </script>
+      {% endif %}
+
+      <!-- Limits & Expiration -->
+      <div class="adm-form-row">
+        <div class="adm-field">
+          <label>Máximo de números por pessoa</label>
+          <input type="number" name="max_per_person" min="1"
+                 value="{{ campaign.max_per_person if campaign else 10 }}" />
+        </div>
+        <div class="adm-field">
+          <label>Expiração da reserva (minutos)</label>
+          <input type="number" name="reservation_expires_minutes" min="5" max="10080"
+                 value="{{ campaign.reservation_expires_minutes if campaign else 30 }}" />
+          <small>Após este tempo, a reserva é cancelada automaticamente.</small>
+        </div>
+      </div>
+
+      <!-- Draw date -->
+      <div class="adm-form-row">
+        <div class="adm-field">
+          <label>Data e Hora do Sorteio</label>
+          <input type="datetime-local" name="draw_date"
+                 value="{{ campaign.draw_date.strftime('%Y-%m-%dT%H:%M') if campaign and campaign.draw_date else '' }}" />
+        </div>
+      </div>
+
+      <!-- PIX -->
+      <div style="padding:16px;background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.1);border-radius:10px;">
+        <h4 style="margin:0 0 14px;font-size:14px;color:#67e8f9;">💳 Configuração PIX</h4>
+        <div class="adm-form-row">
+          <div class="adm-field">
+            <label>Chave PIX *</label>
+            <input type="text" name="pix_key"
+                   value="{{ campaign.pix_key if campaign else '' }}"
+                   placeholder="CPF, e-mail, telefone ou chave aleatória" />
+          </div>
+          <div class="adm-field">
+            <label>Nome do Recebedor (máx. 25 chars)</label>
+            <input type="text" name="pix_receiver_name" maxlength="25"
+                   value="{{ campaign.pix_receiver_name if campaign else 'SORTEIOS' }}" />
+          </div>
+        </div>
+        <div class="adm-form-row">
+          <div class="adm-field">
+            <label>Cidade do Recebedor (máx. 15 chars)</label>
+            <input type="text" name="pix_receiver_city" maxlength="15"
+                   value="{{ campaign.pix_receiver_city if campaign else 'SAO PAULO' }}" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions" style="margin-top:8px;">
+        <a href="/admin/sorteios" class="btn">Cancelar</a>
+        <button type="submit" class="btn primary">
+          {% if campaign %}Salvar alterações{% else %}Criar Sorteio{% endif %}
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Recent orders for this raffle -->
+{% if campaign and orders %}
+<div class="adm-card">
+  <div class="adm-card-header">
+    <h3>🛒 Últimos Pedidos</h3>
+    <a href="/admin/pedidos?campaign_id={{ campaign.id }}" class="btn btn-sm">Ver todos</a>
+  </div>
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr><th>Comprador</th><th>Total</th><th>Status</th><th>Data</th><th>Ações</th></tr>
+      </thead>
+      <tbody>
+        {% for o in orders[:10] %}
+        <tr>
+          <td>{{ o.buyer.name if o.buyer else '—' }}</td>
+          <td>R$ {{ '%.2f' % o.total_amount }}</td>
+          <td><span class="status-badge {{ o.status }}">{{ o.status | status_pt }}</span></td>
+          <td style="color:var(--muted);font-size:12px;">{{ o.created_at.strftime('%d/%m %H:%M') if o.created_at else '—' }}</td>
+          <td>
+            {% if o.status == 'pending' %}
+            <form method="post" action="/admin/pedidos/{{ o.id }}/confirmar" style="display:inline">
+              <button class="btn btn-sm btn-success">✓ Confirmar</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sorteios — Escolha seus números</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero-inner container">
+        <div class="hero-text">
+          <div class="logo-wrap"><img src="/static/img/logo.svg" alt="Sorteios logo" /></div>
+          <h1>Sorteios</h1>
+          <p class="subtitle">Crie campanhas, ofereça cotas numeradas e receba pagamentos via PIX.</p>
+        </div>
+        <div class="hero-cta">
+          <button id="btn-new" class="btn primary">+ Nova campanha</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="main container">
+      <section class="campaigns-panel">
+        <div class="panel-header">
+          <h2>Campanhas ativas</h2>
+        </div>
+        <div id="list" class="campaigns-list">
+          <div class="loading-spinner">Carregando...</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal criar campanha -->
+    <div id="modalCreate" class="modal hidden" role="dialog" aria-modal="true" aria-label="Criar campanha">
+      <div class="modal-card">
+        <h3>Criar campanha</h3>
+        <form id="createForm" class="form">
+          <label class="field-label">Título *</label>
+          <input name="title" placeholder="Ex: Rifa Beneficente" required maxlength="200" />
+
+          <label class="field-label">Meta em R$ *</label>
+          <input name="goal_amount" type="number" step="0.01" min="1" placeholder="Ex: 5000.00" required />
+
+          <label class="field-label">Valor por cota (R$) *</label>
+          <input name="price_per_quota" type="number" step="0.01" min="0.01" placeholder="Ex: 10.00" required />
+
+          <label class="field-label">Chave PIX</label>
+          <input name="pix_key" placeholder="CPF, CNPJ, e-mail ou telefone" />
+
+          <label class="field-label">Data do sorteio</label>
+          <input name="draw_date" type="datetime-local" />
+
+          <div id="createError" class="form-error" style="display:none"></div>
+          <div class="form-actions">
+            <button type="button" id="btn-close-create" class="btn">Cancelar</button>
+            <button type="submit" class="btn primary" id="btn-create-submit">Criar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script>
+      const CAMPAIGN_ID = undefined;
+    </script>
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

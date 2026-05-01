@@ -1,0 +1,119 @@
+{% extends "admin_base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% set active = 'dashboard' %}
+
+{% block topbar_actions %}
+<form method="post" action="/api/admin/cancel-expired" style="margin:0">
+  <button class="btn btn-sm" type="submit">🗑 Cancelar expirados</button>
+</form>
+<a href="/admin/sorteios/novo" class="btn btn-sm primary">+ Novo Sorteio</a>
+{% endblock %}
+
+{% block content %}
+<!-- Stats cards -->
+<div class="adm-stats">
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Sorteios</div>
+    <div class="adm-stat-value purple">{{ global_stats.total_campaigns }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Pedidos Total</div>
+    <div class="adm-stat-value cyan">{{ global_stats.total_orders }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Pedidos Pagos</div>
+    <div class="adm-stat-value green">{{ global_stats.total_paid_orders }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Receita Paga</div>
+    <div class="adm-stat-value green">R$&nbsp;{{ '%.0f' % global_stats.total_revenue }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Pendente</div>
+    <div class="adm-stat-value orange">R$&nbsp;{{ '%.0f' % global_stats.total_pending }}</div>
+  </div>
+  <div class="adm-stat-card">
+    <div class="adm-stat-label">Compradores</div>
+    <div class="adm-stat-value purple">{{ global_stats.total_buyers }}</div>
+  </div>
+</div>
+
+<!-- Raffles -->
+<div class="adm-card">
+  <div class="adm-card-header">
+    <h2>🎟 Sorteios</h2>
+    <a href="/admin/sorteios" class="btn btn-sm">Ver todos</a>
+  </div>
+  {% if not campaigns %}
+  <div class="empty-state">Nenhum sorteio criado ainda. <a href="/admin/sorteios/novo">Criar primeiro sorteio</a></div>
+  {% else %}
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr>
+          <th>Título</th><th>Status</th><th>Preço</th><th>Data</th><th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in campaigns %}
+        <tr>
+          <td>
+            <strong>{{ c.title }}</strong>
+            <div style="color:var(--muted);font-size:11px;margin-top:2px;">/r/{{ c.slug }}</div>
+          </td>
+          <td><span class="status-badge {{ c.status }}">{{ c.status | status_pt }}</span></td>
+          <td>R$ {{ '%.2f' % c.price_per_quota }}</td>
+          <td>{{ c.draw_date.strftime('%d/%m/%Y') if c.draw_date else '—' }}</td>
+          <td>
+            <div class="adm-actions">
+              <a href="/r/{{ c.slug }}" target="_blank" class="btn btn-sm">↗ Ver</a>
+              <a href="/admin/sorteios/{{ c.id }}" class="btn btn-sm">Editar</a>
+              <button class="btn btn-sm" onclick="window.startDraw({{ c.id }}, {{ c.title | tojson }})">🎲 Sortear</button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Recent Orders -->
+{% if recent_orders %}
+<div class="adm-card">
+  <div class="adm-card-header">
+    <h2>🛒 Últimos Pedidos</h2>
+    <a href="/admin/pedidos" class="btn btn-sm">Ver todos</a>
+  </div>
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr><th>Comprador</th><th>Sorteio</th><th>Total</th><th>Status</th><th>Data</th><th>Ações</th></tr>
+      </thead>
+      <tbody>
+        {% for o in recent_orders %}
+        <tr>
+          <td>{{ o.buyer.name if o.buyer else '—' }}</td>
+          <td style="color:var(--muted);font-size:12px;">{{ o.campaign.title[:28] if o.campaign else '—' }}</td>
+          <td>R$ {{ '%.2f' % o.total_amount }}</td>
+          <td><span class="status-badge {{ o.status }}">{{ o.status | status_pt }}</span></td>
+          <td style="color:var(--muted);font-size:12px;">{{ o.created_at.strftime('%d/%m %H:%M') if o.created_at else '—' }}</td>
+          <td>
+            {% if o.status == 'pending' %}
+            <form method="post" action="/admin/pedidos/{{ o.id }}/confirmar" style="display:inline">
+              <button class="btn btn-sm btn-success">✓ Pago</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+{% block scripts %}{% endblock %}

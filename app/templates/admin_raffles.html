@@ -1,0 +1,74 @@
+{% extends "admin_base.html" %}
+{% block title %}Sorteios{% endblock %}
+{% block page_title %}Gerenciar Sorteios{% endblock %}
+{% set active = 'sorteios' %}
+
+{% block topbar_actions %}
+<a href="/admin/sorteios/novo" class="btn primary btn-sm">+ Novo Sorteio</a>
+{% endblock %}
+
+{% block content %}
+{% if not campaigns %}
+<div class="adm-card" style="text-align:center;padding:60px;">
+  <div style="font-size:48px;margin-bottom:16px;">🎟</div>
+  <h3>Nenhum sorteio criado</h3>
+  <p style="color:var(--muted);margin-bottom:20px;">Crie seu primeiro sorteio para começar a vender números.</p>
+  <a href="/admin/sorteios/novo" class="btn primary">Criar Sorteio</a>
+</div>
+{% else %}
+<div class="adm-card">
+  <div class="adm-table-wrap">
+    <table class="adm-table">
+      <thead>
+        <tr>
+          <th>Sorteio</th>
+          <th>Status</th>
+          <th>Preço</th>
+          <th>Números</th>
+          <th>Vendidos</th>
+          <th>Pagos</th>
+          <th>Data</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in campaigns %}
+        {% set st = stats_map.get(c.id, {}) %}
+        <tr>
+          <td>
+            <strong>{{ c.title }}</strong>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">/r/{{ c.slug }}</div>
+          </td>
+          <td><span class="status-badge {{ c.status }}">{{ c.status | status_pt }}</span></td>
+          <td>R$ {{ '%.2f' % c.price_per_quota }}</td>
+          <td>{{ st.get('total', 0) }}</td>
+          <td>
+            <span style="color:#fbbf24">{{ st.get('reserved', 0) }}</span>
+          </td>
+          <td>
+            <span style="color:#34d399">{{ st.get('paid', 0) }}</span>
+          </td>
+          <td style="white-space:nowrap;color:var(--muted);font-size:12px;">
+            {{ c.draw_date.strftime('%d/%m/%Y') if c.draw_date else '—' }}
+          </td>
+          <td>
+            <div class="adm-actions">
+              <a href="/r/{{ c.slug }}" target="_blank" class="btn btn-sm">↗</a>
+              <a href="/admin/sorteios/{{ c.id }}" class="btn btn-sm">Editar</a>
+              <button class="btn btn-sm" onclick="window.startDraw({{ c.id }}, {{ c.title | tojson }})">🎲 Sortear</button>
+              <form method="post" action="/admin/sorteios/{{ c.id }}/deletar"
+                    onsubmit="return confirm('Deletar sorteio?')">
+                <button class="btn btn-sm btn-danger" type="submit">Deletar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+{% block scripts %}{% endblock %}

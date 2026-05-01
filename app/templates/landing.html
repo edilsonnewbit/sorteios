@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sorteios — Crie sorteios profissionais em minutos</title>
+  <meta name="description" content="Plataforma completa para criar e gerenciar sorteios com pagamento PIX integrado. Seguro, rápido e profissional." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep: #020617;
+      --bg-card: rgba(255,255,255,0.03);
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+      --cyan: #06b6d4;
+      --cyan-light: #67e8f9;
+      --text: #e6eef6;
+      --muted: #9aa4b2;
+      --border: rgba(255,255,255,0.06);
+      --radius: 16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a { text-decoration: none; color: inherit; }
+
+    /* ── Navbar ── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(2,6,23,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .nav-brand {
+      font-size: 22px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #a78bfa, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      white-space: nowrap;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      transition: color .15s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-ghost {
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      transition: color .15s, border-color .15s, background .15s;
+      font-family: inherit;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); }
+    .btn-grad {
+      padding: 8px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity .15s, transform .15s, box-shadow .15s;
+      box-shadow: 0 0 20px rgba(124,58,237,0.3);
+    }
+    .btn-grad:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 0 32px rgba(124,58,237,0.5); }
+
+    @media (max-width: 680px) {
+      .nav-links { display: none; }
+    }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 80px 24px;
+    }
+
+    /* Background orbs */
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 800px; height: 600px;
+      left: -200px; top: -100px;
+      background: radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 65%);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: orbFloat 12s ease-in-out infinite alternate;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 700px; height: 500px;
+      right: -150px; bottom: -50px;
+      background: radial-gradient(circle, rgba(6,182,212,0.15) 0%, transparent 65%);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: orbFloat 10s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes orbFloat {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(30px, 20px) scale(1.08); }
+    }
+
+    /* Grid dots overlay */
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      max-width: 860px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      background: rgba(124,58,237,0.12);
+      border: 1px solid rgba(124,58,237,0.25);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-light);
+      margin-bottom: 28px;
+    }
+
+    .hero-title {
+      font-size: clamp(36px, 7vw, 72px);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+    }
+    .hero-title .grad {
+      background: linear-gradient(90deg, #a78bfa 0%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(16px, 2.2vw, 20px);
+      color: var(--muted);
+      max-width: 580px;
+      margin: 0 auto 40px;
+      font-weight: 400;
+      line-height: 1.7;
+    }
+
+    .hero-ctas {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 56px;
+    }
+    .btn-hero-primary {
+      padding: 14px 32px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform .15s, box-shadow .15s, opacity .15s;
+      box-shadow: 0 0 40px rgba(124,58,237,0.4), 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 0 60px rgba(124,58,237,0.6), 0 8px 30px rgba(0,0,0,0.4); }
+    .btn-hero-secondary {
+      padding: 14px 32px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s, border-color .15s, transform .15s;
+    }
+    .btn-hero-secondary:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
+
+    /* Floating stat badges */
+    .hero-stats {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      backdrop-filter: blur(8px);
+    }
+    .stat-pill .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent-light);
+    }
+    .stat-pill .dot.cyan { background: var(--cyan); }
+    .stat-pill .dot.green { background: #34d399; }
+
+    /* ── Section base ── */
+    section {
+      padding: 100px 24px;
+    }
+    .section-inner {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+    .section-label {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--accent-light), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 17px;
+      color: var(--muted);
+      text-align: center;
+      max-width: 520px;
+      margin: 0 auto 60px;
+      line-height: 1.7;
+    }
+
+    /* ── Features ── */
+    .features-bg {
+      background: linear-gradient(180deg, rgba(124,58,237,0.04) 0%, transparent 100%);
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      transition: border-color .2s, transform .2s, background .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(124,58,237,0.4), transparent);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .feature-card:hover {
+      border-color: rgba(124,58,237,0.25);
+      transform: translateY(-4px);
+      background: rgba(255,255,255,0.05);
+    }
+    .feature-card:hover::before { opacity: 1; }
+
+    .feature-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(6,182,212,0.15));
+      border: 1px solid rgba(124,58,237,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .feature-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .feature-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* ── How it works ── */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 32px;
+      position: relative;
+    }
+    .step {
+      text-align: center;
+      padding: 0 16px;
+    }
+    .step-num {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 900;
+      color: #fff;
+      margin: 0 auto 20px;
+      box-shadow: 0 0 30px rgba(124,58,237,0.35);
+    }
+    .step-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .step-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* ── CTA Section ── */
+    .cta-section {
+      background: transparent;
+    }
+    .cta-card {
+      max-width: 700px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(6,182,212,0.06));
+      border: 1px solid rgba(124,58,237,0.2);
+      border-radius: 24px;
+      padding: 56px 40px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 10%; right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(124,58,237,0.5), rgba(6,182,212,0.5), transparent);
+    }
+    .cta-title {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+    .cta-sub {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 32px;
+      line-height: 1.7;
+    }
+    .btn-cta {
+      display: inline-block;
+      padding: 15px 40px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: transform .15s, box-shadow .15s;
+      box-shadow: 0 0 40px rgba(124,58,237,0.35);
+    }
+    .btn-cta:hover { transform: translateY(-2px); box-shadow: 0 0 60px rgba(124,58,237,0.55); }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 36px 24px;
+      text-align: center;
+    }
+    .footer-inner {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-brand {
+      font-size: 18px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #a78bfa, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .footer-copy {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── Divider ── */
+    .section-divider {
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--cyan));
+      border-radius: 999px;
+      margin: 0 auto 24px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navbar ── -->
+<header class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">🎟 Sorteios</a>
+    <ul class="nav-links">
+      <li><a href="#como-funciona">Como funciona</a></li>
+      <li><a href="#recursos">Recursos</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="/login" class="btn-ghost">Entrar</a>
+      <a href="/register" class="btn-grad">Criar conta</a>
+    </div>
+  </div>
+</header>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span>✨</span> Plataforma de sorteios profissional
+    </div>
+    <h1 class="hero-title">
+      Crie sorteios<br><span class="grad">profissionais</span><br>em minutos
+    </h1>
+    <p class="hero-sub">
+      Gerencie seus sorteios com pagamento PIX integrado, painel completo e números ilimitados. Simples, seguro e pronto para usar.
+    </p>
+    <div class="hero-ctas">
+      <a href="/register" class="btn-hero-primary">Criar conta grátis →</a>
+      <a href="#como-funciona" class="btn-hero-secondary">Ver como funciona</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-pill"><span class="dot"></span> 500+ sorteios criados</div>
+      <div class="stat-pill"><span class="dot green"></span> 100% seguro</div>
+      <div class="stat-pill"><span class="dot cyan"></span> PIX integrado</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ── -->
+<section id="recursos" class="features-bg">
+  <div class="section-inner">
+    <div class="section-label">Recursos</div>
+    <div class="section-divider"></div>
+    <h2 class="section-title">Tudo que você precisa</h2>
+    <p class="section-sub">Do cadastro ao sorteio, nossa plataforma cuida de tudo com segurança e praticidade.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔢</div>
+        <div class="feature-title">Números ilimitados</div>
+        <p class="feature-desc">Configure qualquer quantidade de cotas com valores personalizados. Gere automaticamente todos os números do seu sorteio sem complicação.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💸</div>
+        <div class="feature-title">Pagamento PIX automático</div>
+        <p class="feature-desc">Gere QR Code PIX instantaneamente para cada comprador. Chave PIX, recebedor e cidade configuráveis por sorteio.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Painel completo de gestão</div>
+        <p class="feature-desc">Acompanhe vendas, confirme pagamentos, visualize estatísticas e exporte relatórios CSV em tempo real pelo seu painel.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ── -->
+<section id="como-funciona">
+  <div class="section-inner">
+    <div class="section-label">Passo a passo</div>
+    <div class="section-divider"></div>
+    <h2 class="section-title">Como funciona</h2>
+    <p class="section-sub">Em três passos simples você está pronto para vender suas cotas.</p>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-title">Cadastre-se</div>
+        <p class="step-desc">Crie sua conta gratuitamente informando nome, e-mail e empresa. Após aprovação do administrador, você já pode começar.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-title">Crie seu sorteio</div>
+        <p class="step-desc">Configure título, valor das cotas, meta de arrecadação, data do sorteio, imagem do prêmio e sua chave PIX de recebimento.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-title">Compartilhe e receba</div>
+        <p class="step-desc">Compartilhe o link do seu sorteio. Os compradores escolhem os números e pagam via PIX. Você gerencia tudo pelo painel.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="cta-section">
+  <div class="section-inner">
+    <div class="cta-card">
+      <h2 class="cta-title">Pronto para começar?</h2>
+      <p class="cta-sub">Crie sua conta agora e comece a vender cotas do seu sorteio hoje mesmo. Plataforma profissional, fácil de usar.</p>
+      <a href="/register" class="btn-cta">Criar conta grátis →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">🎟 Sorteios</div>
+    <div class="footer-copy">&copy; 2025 Sorteios. Todos os direitos reservados.</div>
+  </div>
+</footer>
+
+</body>
+</html>

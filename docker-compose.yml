@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Two options: SQLite (default) or Postgres (recommended for production)
+      # To use SQLite (bind mount ./data): DATABASE_URL=sqlite:////data/sorteios.db
+      # To use Postgres service below (production): set DATABASE_URL to postgres://postgres:postgres@db:5432/sorteios
+      DATABASE_URL: "sqlite:////data/sorteios.db"
+    volumes:
+      # - opção 1 (bind mount local): persiste em ./data no host
+      - ./data:/data
+      # - opção 2 (named volume): comente a linha acima e descomente a linha abaixo
+      # - sorteios_data:/data
+      # mounts de desenvolvimento: mudanças em estáticos/templates/código sem rebuild
+      - ./app/static:/app/app/static
+      - ./app/templates:/app/app/templates
+      - ./app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sorteios
+    volumes:
+      - sorteios_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sorteios_data: {}
+  sorteios_pgdata: {}

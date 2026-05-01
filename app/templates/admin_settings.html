@@ -1,0 +1,85 @@
+{% extends "admin_base.html" %}
+{% block title %}Configurações{% endblock %}
+{% block page_title %}Configurações do Sistema{% endblock %}
+{% set active = 'config' %}
+
+{% block content %}
+{% if success %}
+<div class="adm-success">{{ success }}</div>
+{% endif %}
+
+<div class="adm-notice">
+  💡 As configurações de e-mail devem ser definidas via variáveis de ambiente no servidor (.env ou docker-compose).
+  Este painel exibe as configurações atuais (somente leitura).
+</div>
+
+<div class="adm-card">
+  <h3 style="margin-top:0;">📧 Configuração de E-mail (SMTP)</h3>
+  <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">
+    Configure as variáveis abaixo no arquivo <code>.env</code> ou <code>docker-compose.yml</code>:
+  </p>
+  <div style="display:grid;gap:8px;">
+    {% set env_vars = [
+      ('SMTP_HOST', settings.smtp_host, 'Host do servidor SMTP', 'smtp.gmail.com'),
+      ('SMTP_PORT', settings.smtp_port, 'Porta SMTP', '587 (TLS) ou 465 (SSL)'),
+      ('SMTP_USER', settings.smtp_user, 'Usuário SMTP (e-mail)', 'seu@email.com'),
+      ('SMTP_PASS', '***' if settings.smtp_user else '', 'Senha ou App Password', ''),
+      ('SMTP_FROM', settings.smtp_from, 'E-mail remetente', 'noreply@seudominio.com'),
+      ('SMTP_FROM_NAME', settings.smtp_from_name, 'Nome do remetente', 'Sorteios'),
+      ('ADMIN_EMAIL', settings.admin_email, 'E-mail para notificações admin', 'admin@seudominio.com'),
+      ('BASE_URL', settings.base_url, 'URL base do sistema (para links nos e-mails)', 'https://seudominio.com'),
+    ] %}
+    {% for var, val, desc, example in env_vars %}
+    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:12px 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div>
+          <code style="color:#a78bfa;font-size:13px;">{{ var }}</code>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;">{{ desc }}</div>
+          {% if example %}<div style="font-size:11px;color:rgba(154,164,178,0.5);">Ex: {{ example }}</div>{% endif %}
+        </div>
+        <div style="font-size:13px;{% if val %}color:#e6eef6{% else %}color:var(--muted){% endif %};">
+          {{ val if val else '(não configurado)' }}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="adm-card">
+  <h3 style="margin-top:0;">🔐 Segurança</h3>
+  <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Variáveis de segurança:</p>
+  <div style="display:grid;gap:8px;">
+    {% for var, desc in [
+      ('ADMIN_PASSWORD', 'Senha do painel administrativo'),
+      ('COOKIE_SECRET', 'Segredo para assinatura de cookies (mínimo 32 chars aleatórios)'),
+    ] %}
+    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:12px 16px;">
+      <code style="color:#f87171;font-size:13px;">{{ var }}</code>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px;">{{ desc }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="adm-card">
+  <h3 style="margin-top:0;">📝 Exemplo de .env</h3>
+  <pre style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:16px;font-size:12px;overflow-x:auto;color:#e2e8f0;line-height:1.7;">
+DATABASE_URL=sqlite:////data/sorteios.db
+ADMIN_PASSWORD=sua-senha-forte-aqui
+COOKIE_SECRET=string-aleatoria-de-64-chars-ou-mais
+BASE_URL=https://seudominio.com
+
+# E-mail (Gmail exemplo)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=seu@gmail.com
+SMTP_PASS=sua-app-password-gmail
+SMTP_FROM=noreply@seudominio.com
+SMTP_FROM_NAME=Sorteios
+ADMIN_EMAIL=admin@seudominio.com
+
+# Backup
+BACKUP_DIR=/data/backups</pre>
+</div>
+{% endblock %}
