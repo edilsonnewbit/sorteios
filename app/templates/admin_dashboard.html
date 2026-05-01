@@ -48,6 +48,13 @@
   {% if not campaigns %}
   <div class="empty-state">Nenhum sorteio criado ainda. <a href="/admin/sorteios/novo">Criar primeiro sorteio</a></div>
   {% else %}
+  <script>
+  // Dados das campanhas para sorteio
+  if (!window._campaignData) window._campaignData = {};
+  {%- for c in campaigns %}
+  window._campaignData[{{ c.id }}] = {id: {{ c.id }}, title: {{ c.title | tojson }}};
+  {%- endfor %}
+  </script>
   <div class="adm-table-wrap">
     <table class="adm-table">
       <thead>
@@ -69,7 +76,7 @@
             <div class="adm-actions">
               <a href="/r/{{ c.slug }}" target="_blank" class="btn btn-sm">↗ Ver</a>
               <a href="/admin/sorteios/{{ c.id }}" class="btn btn-sm">Editar</a>
-              <button class="btn btn-sm" onclick="window.startDraw({{ c.id }}, {{ c.title | tojson | safe }})">🎲 Sortear</button>
+              <button class="btn btn-sm" onclick="var d=window._campaignData[{{ c.id }}]; window.startDraw(d.id, d.title)">🎲 Sortear</button>
             </div>
           </td>
         </tr>

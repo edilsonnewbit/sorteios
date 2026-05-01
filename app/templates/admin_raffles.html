@@ -8,6 +8,14 @@
 {% endblock %}
 
 {% block content %}
+<script>
+// Dados das campanhas para sorteio
+window._campaignData = {
+{%- for c in campaigns %}
+  {{ c.id }}: {id: {{ c.id }}, title: {{ c.title | tojson }}},
+{%- endfor %}
+};
+</script>
 {% if not campaigns %}
 <div class="adm-card" style="text-align:center;padding:60px;">
   <div style="font-size:48px;margin-bottom:16px;">🎟</div>
@@ -55,7 +63,7 @@
             <div class="adm-actions">
               <a href="/r/{{ c.slug }}" target="_blank" class="btn btn-sm">↗</a>
               <a href="/admin/sorteios/{{ c.id }}" class="btn btn-sm">Editar</a>
-              <button class="btn btn-sm" onclick="window.startDraw({{ c.id }}, {{ c.title | tojson | safe }})">🎲 Sortear</button>
+              <button class="btn btn-sm" onclick="var d=window._campaignData[{{ c.id }}]; window.startDraw(d.id, d.title)">🎲 Sortear</button>
               <form method="post" action="/admin/sorteios/{{ c.id }}/deletar"
                     onsubmit="return confirm('Deletar sorteio?')">
                 <button class="btn btn-sm btn-danger" type="submit">Deletar</button>
