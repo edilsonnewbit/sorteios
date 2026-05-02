@@ -124,6 +124,13 @@ def optional_admin(request: Request) -> bool:
     return _admin_user(request) is not None
 
 
+def _is_super_admin(db_user) -> bool:
+    if not db_user or db_user.role != "admin":
+        return False
+    super_admin_email = os.getenv("ADMIN_EMAIL", "admin@sorteios.local").strip().lower()
+    return (db_user.email or "").strip().lower() == super_admin_email
+
+
 # ─── Health ───────────────────────────────────────────────────────────────────
 
 @app.get("/health")
@@ -1019,10 +1026,15 @@ def admin_logs_page(request: Request, session: Session = Depends(get_db),
 @app.get("/admin/usuarios", response_class=HTMLResponse)
 def admin_users_page(request: Request, session: Session = Depends(get_db),
                      _: None = Depends(require_admin)):
+    current = _admin_user(request)
+    current_user = crud.get_user(session, current.get("id")) if current and current.get("id") else None
+    is_super_admin = _is_super_admin(current_user)
     users = crud.list_users(session)
     pending_count = sum(1 for u in users if u.status == "pending")
     return templates.TemplateResponse(request, "admin_users.html", {
-        "users": users, "pending_count": pending_count,
+        "users": users,
+        "pending_count": pending_count,
+        "is_super_admin": is_super_admin,
     })
 
 
@@ -1044,6 +1056,67 @@ def admin_reject_user(user_id: int, session: Session = Depends(get_db),
 def admin_set_user_limit(user_id: int, max_raffles: int = Form(...),
                          session: Session = Depends(get_db), _: None = Depends(require_admin)):
     crud.update_user_max_raffles(session, user_id, max_raffles)
+    return RedirectResponse("/admin/usuarios", status_code=303)
+
+
+@app.post("/admin/usuarios/{user_id}/credenciais")
+def admin_update_user_credentials(
+    request: Request,
+    user_id: int,
+    email: str = Form(""),
+    password: str = Form(""),
+    session: Session = Depends(get_db),
+    _: None = Depends(require_admin),
+):
+    actor_payload = _admin_user(request)
+    actor_user = crud.get_user(session, actor_payload.get("id")) if actor_payload and actor_payload.get("id") else None
+    if not actor_user:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
+    target = crud.get_user(session, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    new_email = (email or "").strip().lower()
+    new_password = (password or "").strip()
+
+    wants_email_change = bool(new_email and new_email != (target.email or "").strip().lower())
+    wants_password_change = bool(new_password)
+
+    if wants_email_change and not _is_super_admin(actor_user):
+        raise HTTPException(status_code=403, detail="Somente o super admin pode alterar e-mail")
+
+    if wants_password_change and len(new_password) < 8:
+        raise HTTPException(status_code=422, detail="Senha deve ter pelo menos 8 caracteres")
+
+    if wants_email_change:
+        existing = crud.get_user_by_email(session, new_email)
+        if existing and existing.id != target.id:
+            raise HTTPException(status_code=409, detail="E-mail já está em uso")
+
+    if not wants_email_change and not wants_password_change:
+        return RedirectResponse("/admin/usuarios", status_code=303)
+
+    crud.update_user_credentials(
+        session,
+        user_id,
+        email=new_email if wants_email_change else None,
+        password=new_password if wants_password_change else None,
+    )
+
+    ip = _get_client_ip(request)
+    changed_fields = []
+    if wants_email_change:
+        changed_fields.append("email")
+    if wants_password_change:
+        changed_fields.append("password")
+    crud.log_admin_action(
+        session,
+        "user_credentials_update",
+        f"actor={actor_user.email} target={target.email} fields={','.join(changed_fields)}",
+        ip,
+    )
+
     return RedirectResponse("/admin/usuarios", status_code=303)
 
 

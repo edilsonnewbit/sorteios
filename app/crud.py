@@ -650,6 +650,28 @@ def update_user_max_raffles(db: Session, user_id: int, max_raffles: int):
         db.refresh(user)
     return user
 
+def update_user_credentials(
+    db: Session,
+    user_id: int,
+    email: str | None = None,
+    password: str | None = None,
+):
+    from .auth import hash_password
+
+    user = get_user(db, user_id)
+    if not user:
+        return None
+
+    if email is not None:
+        user.email = email.lower().strip()
+
+    if password:
+        user.password_hash = hash_password(password)
+
+    db.commit()
+    db.refresh(user)
+    return user
+
 def count_user_raffles(db: Session, owner_id: int) -> int:
     return db.query(models.Campaign).filter(models.Campaign.owner_id == owner_id).count()
 
