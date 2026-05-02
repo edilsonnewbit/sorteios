@@ -3,8 +3,24 @@
 Gera payload com campos básicos: GUI, chave, txid, valor, descricao, merchant name/city
 e calcula CRC16 conforme especificação (polinômio 0x1021, init 0xFFFF).
 """
+import re
 import unicodedata
 from typing import Optional
+
+
+def _normalize_pix_key(key: str) -> str:
+    """Remove formatação de CNPJ/CPF da chave PIX conforme exigido pela spec BACEN.
+
+    CNPJ formatado (XX.XXX.XXX/XXXX-XX) → 14 dígitos
+    CPF formatado (XXX.XXX.XXX-XX)       → 11 dígitos
+    Email, telefone, EVP                  → sem alteração
+    """
+    key = key.strip()
+    if re.match(r'^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}$', key):
+        return re.sub(r'[.\-/]', '', key)
+    if re.match(r'^\d{3}\.\d{3}\.\d{3}-\d{2}$', key):
+        return re.sub(r'[.\-]', '', key)
+    return key
 
 
 def _normalize_ascii(text: str) -> str:
@@ -44,6 +60,9 @@ def generate_pix_payload(key: str, amount: float, description: Optional[str] = N
     """
     if not txid:
         txid = "***"
+
+    # Normaliza chave PIX (remove formatação de CNPJ/CPF se presente)
+    key = _normalize_pix_key(key)
 
     # Campos 59 e 60 devem ser ASCII puro (sem acentos) conforme spec EMV
     merchant_name = _normalize_ascii(merchant_name)
