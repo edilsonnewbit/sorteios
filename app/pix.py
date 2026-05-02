@@ -3,7 +3,15 @@
 Gera payload com campos básicos: GUI, chave, txid, valor, descricao, merchant name/city
 e calcula CRC16 conforme especificação (polinômio 0x1021, init 0xFFFF).
 """
+import unicodedata
 from typing import Optional
+
+
+def _normalize_ascii(text: str) -> str:
+    """Remove acentos e normaliza para ASCII puro (exigido nos campos 59 e 60 do EMV)."""
+    normalized = unicodedata.normalize("NFD", text)
+    return "".join(c for c in normalized if unicodedata.category(c) != "Mn")
+
 
 def _crc16_ccitt(data: bytes) -> int:
     crc = 0xFFFF
@@ -17,9 +25,13 @@ def _crc16_ccitt(data: bytes) -> int:
                 crc = (crc << 1) & 0xFFFF
     return crc & 0xFFFF
 
+
 def _tlv(id_: str, value: str) -> str:
-    length = f"{len(value):02d}"
+    # Comprimento em bytes UTF-8, conforme spec BACEN BR Code
+    encoded_len = len(value.encode("utf-8"))
+    length = f"{encoded_len:02d}"
     return f"{id_}{length}{value}"
+
 
 def generate_pix_payload(key: str, amount: float, description: Optional[str] = None, txid: Optional[str] = None, merchant_name: str = "SORTEIOS", merchant_city: str = "SAO PAULO") -> str:
     """Retorna o payload BR Code (string) pronto para gerar QR code.
@@ -27,11 +39,15 @@ def generate_pix_payload(key: str, amount: float, description: Optional[str] = N
     - key: chave PIX (email, cpf, telefone ou EVP)
     - amount: valor em reais
     - description: texto descritivo opcional
-    - txid: id da transação (máx 25). Se None, usa "*"
-    - merchant_name, merchant_city: nomes para o QR
+    - txid: id da transação (máx 25). Se None, usa "***"
+    - merchant_name, merchant_city: nomes para o QR (acentos removidos automaticamente)
     """
     if not txid:
-        txid = "*"
+        txid = "***"
+
+    # Campos 59 e 60 devem ser ASCII puro (sem acentos) conforme spec EMV
+    merchant_name = _normalize_ascii(merchant_name)
+    merchant_city = _normalize_ascii(merchant_city)
 
     # Merchant Account Information (ID 26) -> contains GUI (00) + key (01)
     gui = _tlv("00", "br.gov.bcb.pix")
