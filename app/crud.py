@@ -292,10 +292,12 @@ def checkout_atomic(
     try:
         if campaign.pix_key:
             txid = f"ORD{order.id:06d}"[:25]
+            # Descrição exibida pelo banco ao comprador: título + nome do comprador
+            desc = f"{campaign.title} - {buyer_name}"[:99]
             pix_payload = generate_pix_payload(
                 key=campaign.pix_key,
                 amount=total,
-                description=f"Sorteio {campaign.title}"[:99],
+                description=desc,
                 txid=txid,
                 merchant_name=(campaign.pix_receiver_name or "SORTEIOS")[:25],
                 merchant_city=(campaign.pix_receiver_city or "SAO PAULO")[:15],
