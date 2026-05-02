@@ -1,0 +1,7 @@
+data/sorteios.db-shm
+data/sorteios.db-wal
+data/uploads/*
+!data/uploads/.gitkeep
+.env
+.env.*
+certs/

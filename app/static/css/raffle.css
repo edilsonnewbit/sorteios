@@ -363,6 +363,29 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+.rf-qty-shortcuts {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+.rf-qty-btn {
+  padding: .25rem .55rem;
+  font-size: .8rem;
+  font-weight: 700;
+  border: 1.5px solid var(--accent, #7c3aed);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent, #7c3aed);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  line-height: 1;
+}
+.rf-qty-btn:hover,
+.rf-qty-btn.active {
+  background: var(--accent, #7c3aed);
+  color: #fff;
+}
+
 .rf-quick-buy {
   display: flex;
   align-items: center;

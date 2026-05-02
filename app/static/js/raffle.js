@@ -348,10 +348,20 @@ window.removeFromCart = function(num) {
 };
 
 // ── Quick Buy ─────────────────────────────────────────────────────────────
-function quickBuy() {
-  const qty = parseInt($("quickQty").value) || 1;
-  if (qty < 1 || qty > MAX_PER_PERSON) {
-    toast(`Informe entre 1 e ${MAX_PER_PERSON} números.`, "error");
+function setQuickQty(n) {
+  const input = $("quickQty");
+  input.value = n;
+  // Highlight active shortcut button
+  document.querySelectorAll(".rf-qty-btn").forEach(btn => {
+    btn.classList.toggle("active", parseInt(btn.textContent) === n);
+  });
+  quickBuy(n);
+}
+
+function quickBuy(forceQty) {
+  const qty = forceQty || parseInt($("quickQty").value) || 1;
+  if (qty < 1) {
+    toast("Informe ao menos 1 número.", "error");
     return;
   }
   const available = state.quotas.filter(q => q.status === "available" && !state.selected.has(q.number));

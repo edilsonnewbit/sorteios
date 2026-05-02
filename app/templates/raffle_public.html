@@ -156,6 +156,14 @@
       <div class="rf-toolbar-right">
         <div class="rf-quick-buy">
           <label for="quickQty">Compra rápida:</label>
+          <div class="rf-qty-shortcuts">
+            <button class="rf-qty-btn" onclick="setQuickQty(5)">5</button>
+            <button class="rf-qty-btn" onclick="setQuickQty(10)">10</button>
+            <button class="rf-qty-btn" onclick="setQuickQty(15)">15</button>
+            <button class="rf-qty-btn" onclick="setQuickQty(20)">20</button>
+            <button class="rf-qty-btn" onclick="setQuickQty(50)">50</button>
+            <button class="rf-qty-btn" onclick="setQuickQty(100)">100</button>
+          </div>
           <input type="number" id="quickQty" min="1" max="{{ campaign.max_per_person or 10 }}" value="1" placeholder="Qtd" />
           <button class="btn primary" id="btnQuickBuy">Aleatório</button>
         </div>

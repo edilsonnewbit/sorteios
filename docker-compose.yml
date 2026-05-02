@@ -5,14 +5,15 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # Two options: SQLite (default) or Postgres (recommended for production)
-      # To use SQLite (bind mount ./data): DATABASE_URL=sqlite:////data/sorteios.db
-      # To use Postgres service below (production): set DATABASE_URL to postgres://postgres:postgres@db:5432/sorteios
-      DATABASE_URL: "sqlite:////data/sorteios.db"
+      # Using PostgreSQL (recommended for all environments)
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/sorteios"
       LOG_LEVEL: "warning"
     volumes:
-      # Persist database and uploads on host.
-      - ./data:/data
+      # Persist uploads on host.
+      - ./data/uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --log-level warning --no-access-log
 
   db:

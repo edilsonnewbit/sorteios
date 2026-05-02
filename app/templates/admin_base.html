@@ -595,6 +595,14 @@
     });
   }
 
+  function maskPhone(phone) {
+    var digits = String(phone || "").replace(/\D/g, "");
+    if (!digits) return "";
+    if (digits.length <= 2) return digits;
+    var hidden = "•".repeat(digits.length - 2);
+    return hidden + digits.slice(-2);
+  }
+
   // ── Start button ─────────────────────────────────────────────────────
   document.getElementById("dsBtnStart").addEventListener("click", async function () {
     if (!drawId) return;
@@ -633,7 +641,7 @@
     document.getElementById("dsWinName").textContent =
       result.reserved_by ? "🏅 " + result.reserved_by : "🎉 Número sorteado!";
     document.getElementById("dsWinWpp").textContent =
-      result.whatsapp ? "📱 " + result.whatsapp : "";
+      result.whatsapp ? "📱 " + maskPhone(result.whatsapp) : "";
 
     showPhase("Winner");
 
@@ -667,19 +675,32 @@
     var el = document.getElementById("dsNumber");
     var status = document.getElementById("dsSpinStatus");
     var padded = String(finalNum).padStart(3, "0");
+    var prevNear = null;
 
     // Delay sequence: starts fast, ends slow (ms between each number change)
     var delays = [90,110,140,175,215,260,315,380,460,560,680,820,980,1100];
 
     for (var i = 0; i < delays.length; i++) {
-      var offset = delays.length - 1 - i;
       var near;
-      if (offset < 5) {
-        near = ((finalNum - offset + 99997) % 99997) + 1;
+      var isLast = i === delays.length - 1;
+      if (isLast) {
+        near = finalNum;
       } else {
-        near = Math.floor(Math.random() * 9999) + 1;
+        // Keep suspense: random values all the way down, avoiding obvious sequences.
+        var attempts = 0;
+        do {
+          near = Math.floor(Math.random() * 9999) + 1;
+          attempts++;
+
+          var tooCloseToFinal = Math.abs(near - finalNum) <= 2;
+          var looksSequentialWithPrev = prevNear !== null && Math.abs(near - prevNear) === 1;
+          var repeatedPrev = prevNear !== null && near === prevNear;
+
+          if (attempts > 20) break;
+        } while (near === finalNum || tooCloseToFinal || looksSequentialWithPrev || repeatedPrev);
       }
       el.textContent = String(near).padStart(3, "0");
+      prevNear = near;
       if (i === 9)  status.textContent = "Quase lá...";
       if (i === 11) status.textContent = "E o número é...";
       await sleep(delays[i]);
