@@ -46,6 +46,8 @@ jobs:
           echo "🔍 Validando variáveis obrigatórias..."
           
           REQUIRED_VARS=(
+            "HOSTINGER_API_KEY"
+            "HOSTINGER_VM_ID"
             "POSTGRES_USER"
             "POSTGRES_PASSWORD"
             "SESSION_SECRET"
@@ -63,6 +65,8 @@ jobs:
           
           echo "✨ Todas as variáveis validadas!"
         env:
+          HOSTINGER_API_KEY: ${{ secrets.HOSTINGER_API_KEY }}
+          HOSTINGER_VM_ID: ${{ vars.HOSTINGER_VM_ID }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
@@ -72,7 +76,7 @@ jobs:
         uses: hostinger/deploy-on-vps@v2
         with:
           api-key: ${{ secrets.HOSTINGER_API_KEY }}
-          virtual-machine: ${{ secrets.HOSTINGER_VM_ID }}
+          virtual-machine: ${{ vars.HOSTINGER_VM_ID }}
           project-name: sorteios
           docker-compose-path: docker-compose.prod.yml
           environment-variables: |
@@ -93,7 +97,7 @@ jobs:
         uses: hostinger/deploy-on-vps@v2
         with:
           api-key: ${{ secrets.HOSTINGER_API_KEY }}
-          virtual-machine: ${{ secrets.HOSTINGER_VM_ID }}
+          virtual-machine: ${{ vars.HOSTINGER_VM_ID }}
           project-name: sorteios
           docker-compose-path: docker-compose.prod.yml
           environment-variables: |
