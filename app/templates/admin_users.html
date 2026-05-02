@@ -104,13 +104,8 @@
             <div class="adm-actions">
               <form method="post" action="/admin/usuarios/{{ u.id }}/credenciais"
                     style="display:flex;flex-direction:column;gap:6px;min-width:220px;margin-bottom:8px;">
-                {% if is_super_admin %}
                 <input type="email" name="email" value="{{ u.email }}" placeholder="E-mail"
                        style="padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#e6eef6;font-size:12px;font-family:inherit;outline:none;">
-                {% else %}
-                <input type="email" value="{{ u.email }}" disabled
-                       style="padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);color:var(--muted);font-size:12px;font-family:inherit;outline:none;">
-                {% endif %}
                 <div style="display:flex;gap:6px;align-items:center;">
                   <input type="password" name="password" placeholder="Nova senha"
                          minlength="8"
@@ -122,11 +117,7 @@
                 </div>
               </form>
 
-              {% if is_super_admin %}
-              <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Super admin: pode alterar e-mail e senha.</div>
-              {% else %}
-              <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Admin: pode alterar apenas a senha.</div>
-              {% endif %}
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Admin: pode alterar e-mail e senha.</div>
 
               {% if u.status == 'pending' %}
                 <form method="post" action="/admin/usuarios/{{ u.id }}/aprovar">

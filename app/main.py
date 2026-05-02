@@ -1083,9 +1083,6 @@ def admin_update_user_credentials(
     wants_email_change = bool(new_email and new_email != (target.email or "").strip().lower())
     wants_password_change = bool(new_password)
 
-    if wants_email_change and not _is_super_admin(actor_user):
-        raise HTTPException(status_code=403, detail="Somente o super admin pode alterar e-mail")
-
     if wants_password_change and len(new_password) < 8:
         raise HTTPException(status_code=422, detail="Senha deve ter pelo menos 8 caracteres")
 
