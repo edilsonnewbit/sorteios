@@ -89,13 +89,16 @@
 <!-- ── Progress + Urgency ────────────────────────────────────────────────── -->
 <div class="rf-progress-bar-section container">
   <div class="rf-progress-wrap">
+    <div class="rf-progress-heading">
+      <span>Progresso da meta</span>
+      <strong id="statPct">{{ [((stats.paid + stats.reserved) / stats.total * 100)|round(1), 100]|min if stats.total else 0 }}%</strong>
+    </div>
     <div class="rf-progress-track">
       <div class="rf-progress-fill" id="progressFill"
            style="width: {{ [((stats.paid + stats.reserved) / stats.total * 100)|round(1), 100]|min if stats.total else 0 }}%"></div>
     </div>
     <div class="rf-progress-stats">
-      <span class="stat-sold"><strong id="statSold">{{ stats.paid + stats.reserved }}</strong> vendidos</span>
-      <span class="stat-pct" id="statPct">{{ [((stats.paid + stats.reserved) / stats.total * 100)|round(1), 100]|min if stats.total else 0 }}%</span>
+      <span class="stat-sold"><strong id="statSold">{{ stats.paid + stats.reserved }}</strong> números vendidos</span>
       <span class="stat-avail"><strong id="statAvail">{{ stats.available }}</strong> disponíveis</span>
     </div>
   </div>

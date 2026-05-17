@@ -382,7 +382,6 @@ def api_raffle_detail(slug: str, session: Session = Depends(get_db)):
         "prize_value": c.prize_value,
         "rules": c.rules,
         "price_per_quota": c.price_per_quota,
-        "goal_amount": c.goal_amount,
         "draw_date": c.draw_date.isoformat() if c.draw_date else None,
         "status": c.status,
         "max_per_person": c.max_per_person or 10,

@@ -15,7 +15,6 @@
           <h1>{{ campaign.title }}</h1>
           <p class="subtitle">
             Cota: <strong>R$ {{ '%.2f' % campaign.price_per_quota }}</strong>
-            &nbsp;•&nbsp; Meta: <strong>R$ {{ '%.0f' % campaign.goal_amount }}</strong>
             {% if campaign.draw_date %}
             &nbsp;•&nbsp; Sorteio: <strong>{{ campaign.draw_date.strftime('%d/%m/%Y') }}</strong>
             {% endif %}

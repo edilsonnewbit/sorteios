@@ -214,6 +214,20 @@
   padding: 24px 20px;
 }
 .rf-progress-wrap { margin-bottom: 12px; }
+.rf-progress-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  color: #e6eef6;
+  font-size: 14px;
+  font-weight: 700;
+}
+.rf-progress-heading strong {
+  color: #a78bfa;
+  font-size: 16px;
+}
 .rf-progress-track {
   height: 10px;
   background: rgba(255,255,255,0.06);
