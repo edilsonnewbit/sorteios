@@ -437,7 +437,10 @@ function setQuickQty(n) {
 }
 
 function quickBuy(forceQty) {
-  const qty = Math.min(forceQty || parseInt($("quickQty").value) || 1, MAX_PER_PERSON);
+  const requestedQty = typeof forceQty === "number"
+    ? forceQty
+    : parseInt($("quickQty").value, 10) || 1;
+  const qty = Math.min(requestedQty, MAX_PER_PERSON);
   if (qty < 1) {
     toast("Informe ao menos 1 número.", "error");
     return;
