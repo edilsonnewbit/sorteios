@@ -650,7 +650,8 @@ function initBuyerInputMasks() {
 // ── Share ─────────────────────────────────────────────────────────────────
 function initShareButtons() {
   const url = `${BASE_URL}/r/${CAMPAIGN_SLUG}`;
-  const text = encodeURIComponent(`${CAMPAIGN_TITLE} — Participe do sorteio! Números a partir de R$${PRICE_PER_QUOTA.toFixed(2).replace(".", ",")}. Acesse:`);
+  const customText = ($("shareMsg")?.textContent || "").trim();
+  const text = encodeURIComponent(customText || `${CAMPAIGN_TITLE} — Participe do sorteio! Números a partir de R$${PRICE_PER_QUOTA.toFixed(2).replace(".", ",")}. Acesse:`);
   const shareUrl = encodeURIComponent(url);
 
   $("shareWhatsApp").href = `https://api.whatsapp.com/send?text=${text}%20${shareUrl}`;

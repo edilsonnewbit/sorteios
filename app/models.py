@@ -43,6 +43,7 @@ class Campaign(Base):
     prize_image_url = Column(String(500), nullable=True)
     prize_value = Column(Float, nullable=True)
     rules = Column(Text, nullable=True)
+    share_message_template = Column(Text, nullable=True)
     max_per_person = Column(Integer, default=10, nullable=True)
     pix_receiver_name = Column(String(25), default="SORTEIOS", nullable=True)
     pix_receiver_city = Column(String(15), default="SAO PAULO", nullable=True)

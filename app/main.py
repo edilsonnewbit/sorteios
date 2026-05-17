@@ -255,7 +255,15 @@ def api_create_campaign(item: schemas.CampaignCreate, session: Session = Depends
         raise HTTPException(status_code=422, detail="Valores devem ser positivos")
     if item.price_per_quota > item.goal_amount:
         raise HTTPException(status_code=422, detail="Valor por cota não pode exceder a meta")
-    c = crud.create_campaign(session, item.title, item.goal_amount, item.price_per_quota, item.pix_key, item.draw_date)
+    c = crud.create_campaign(
+        session,
+        item.title,
+        item.goal_amount,
+        item.price_per_quota,
+        item.pix_key,
+        item.draw_date,
+        (item.share_message_template.strip() if item.share_message_template else None),
+    )
     logger.info("Campaign created: id=%s slug=%s", c.id, c.slug)
     return c
 
@@ -338,11 +346,25 @@ def view_raffle_public(request: Request, slug: str, session: Session = Depends(g
     if not c:
         raise HTTPException(status_code=404, detail="Sorteio não encontrado")
     stats = crud.get_raffle_stats(session, c.id)
+    share_link = f"{BASE_URL}/r/{slug}"
+    default_share_message = (
+        f"{c.title} — Participe do sorteio! "
+        f"Números a partir de R$ {c.price_per_quota:.2f}. "
+        f"Acesse: {share_link}"
+    )
+    share_message = default_share_message
+    if c.share_message_template:
+        share_message = c.share_message_template
+        share_message = share_message.replace("{titulo}", c.title)
+        share_message = share_message.replace("{preco}", f"{c.price_per_quota:.2f}")
+        share_message = share_message.replace("{link}", share_link)
+
     return templates.TemplateResponse(request, "raffle_public.html", {
         "campaign": c,
         "stats": stats,
         "base_url": BASE_URL,
         "ref": ref or "",
+        "share_message": share_message,
     })
 
 
@@ -678,6 +700,7 @@ def dash_raffle_new(request: Request):
 async def dash_raffle_create(
     request: Request, session: Session = Depends(get_db),
     title: str = Form(...), description: str = Form(""),
+    share_message_template: str = Form(""),
     prize_value: str = Form(""), rules: str = Form(""),
     goal_amount: float = Form(...), price_per_quota: float = Form(...),
     max_per_person: int = Form(10), pix_key: str = Form(""),
@@ -709,6 +732,7 @@ async def dash_raffle_create(
 
     data = {
         "title": title.strip(), "description": description.strip() or None,
+        "share_message_template": share_message_template.strip() or None,
         "prize_image_url": prize_image_url,
         "prize_value": float(prize_value) if prize_value.strip() else None,
         "rules": rules.strip() or None, "goal_amount": goal_amount,
@@ -814,6 +838,7 @@ async def admin_raffle_create(
     _: None = Depends(require_admin),
     title: str = Form(...),
     description: str = Form(""),
+    share_message_template: str = Form(""),
     prize_value: str = Form(""),
     rules: str = Form(""),
     goal_amount: float = Form(...),
@@ -841,6 +866,7 @@ async def admin_raffle_create(
     data = {
         "title": title.strip(),
         "description": description.strip() or None,
+        "share_message_template": share_message_template.strip() or None,
         "prize_image_url": prize_image_url,
         "prize_value": float(prize_value) if prize_value.strip() else None,
         "rules": rules.strip() or None,
@@ -887,6 +913,7 @@ async def admin_raffle_update(
     _: None = Depends(require_admin),
     title: str = Form(...),
     description: str = Form(""),
+    share_message_template: str = Form(""),
     prize_value: str = Form(""),
     rules: str = Form(""),
     max_per_person: int = Form(10),
@@ -916,6 +943,7 @@ async def admin_raffle_update(
     data = {
         "title": title.strip(),
         "description": description.strip() or None,
+        "share_message_template": share_message_template.strip() or None,
         "prize_image_url": prize_image_url,
         "prize_value": float(prize_value) if prize_value.strip() else None,
         "rules": rules.strip() or None,

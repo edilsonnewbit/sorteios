@@ -227,6 +227,11 @@
               <label>Descrição</label>
               <textarea name="description" placeholder="Descreva o prêmio e o sorteio...">{{ campaign.description if campaign else '' }}</textarea>
             </div>
+            <div class="form-field">
+              <label>Texto pronto para divulgar</label>
+              <textarea name="share_message_template" rows="3" placeholder="Ex: {titulo} - Garanta seu numero por R$ {preco}. Acesse: {link}">{{ campaign.share_message_template if campaign else '' }}</textarea>
+              <small>Opcional. Use os placeholders: {titulo}, {preco}, {link}.</small>
+            </div>
             <div class="form-row">
               <div class="form-field">
                 <label>Valor do prêmio (R$)</label>

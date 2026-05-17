@@ -16,12 +16,14 @@ logger = logging.getLogger(__name__)
 # ─── Campaigns ────────────────────────────────────────────────────────────────
 
 def create_campaign(db: Session, title: str, goal_amount: float, price_per_quota: float,
-                    pix_key: str | None, draw_date: str | None = None):
+                    pix_key: str | None, draw_date: str | None = None,
+                    share_message_template: str | None = None):
     slug = uuid.uuid4().hex[:8]
     dt = _parse_date(draw_date)
     campaign = models.Campaign(
         title=title, slug=slug, goal_amount=goal_amount,
         price_per_quota=price_per_quota, pix_key=pix_key, draw_date=dt,
+        share_message_template=share_message_template,
     )
     db.add(campaign)
     db.flush()
@@ -49,6 +51,7 @@ def create_raffle(db: Session, data: dict) -> models.Campaign:
         price_per_quota=price,
         draw_date=draw_date,
         description=data.get("description"),
+        share_message_template=data.get("share_message_template"),
         prize_image_url=data.get("prize_image_url"),
         prize_value=data.get("prize_value"),
         rules=data.get("rules"),
@@ -76,7 +79,7 @@ def update_raffle(db: Session, campaign_id: int, data: dict) -> models.Campaign 
     if not c:
         return None
     allowed = [
-        "title", "description", "prize_image_url", "prize_value", "rules",
+        "title", "description", "share_message_template", "prize_image_url", "prize_value", "rules",
         "max_per_person", "pix_key", "pix_receiver_name", "pix_receiver_city",
         "reservation_expires_minutes", "status",
     ]

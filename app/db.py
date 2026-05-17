@@ -94,6 +94,7 @@ def _migrate_schema():
             _add_col_if_missing(conn, "campaigns", "prize_image_url", "VARCHAR(500)", cols)
             _add_col_if_missing(conn, "campaigns", "prize_value", "FLOAT", cols)
             _add_col_if_missing(conn, "campaigns", "rules", "TEXT", cols)
+            _add_col_if_missing(conn, "campaigns", "share_message_template", "TEXT", cols)
             _add_col_if_missing(conn, "campaigns", "max_per_person", "INTEGER DEFAULT 10", cols)
             _add_col_if_missing(conn, "campaigns", "pix_receiver_name", "VARCHAR(25) DEFAULT 'SORTEIOS'", cols)
             _add_col_if_missing(conn, "campaigns", "pix_receiver_city", "VARCHAR(15) DEFAULT 'SAO PAULO'", cols)

@@ -24,6 +24,7 @@ class CampaignCreate(BaseModel):
     price_per_quota: float
     pix_key: Optional[str] = None
     draw_date: Optional[str] = None
+    share_message_template: Optional[str] = None
 
     @field_validator("title")
     @classmethod
@@ -37,6 +38,7 @@ class CampaignCreate(BaseModel):
 class RaffleCreate(BaseModel):
     title: str
     description: Optional[str] = None
+    share_message_template: Optional[str] = None
     prize_image_url: Optional[str] = None
     prize_value: Optional[float] = None
     rules: Optional[str] = None
@@ -71,6 +73,7 @@ class RaffleCreate(BaseModel):
 class RaffleUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    share_message_template: Optional[str] = None
     prize_image_url: Optional[str] = None
     prize_value: Optional[float] = None
     rules: Optional[str] = None
@@ -95,6 +98,7 @@ class CampaignSummary(BaseModel):
     winner_quota_id: Optional[int] = None
     created_at: Optional[datetime] = None
     description: Optional[str] = None
+    share_message_template: Optional[str] = None
     prize_image_url: Optional[str] = None
     prize_value: Optional[float] = None
     rules: Optional[str] = None
