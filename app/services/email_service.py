@@ -4,6 +4,8 @@ import ssl
 import base64
 import os
 import logging
+from email import encoders
+from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
@@ -28,6 +30,7 @@ def send_email(
     subject: str,
     html_body: str,
     qr_code_base64: str | None = None,
+    attachments: list[tuple[str, str]] | None = None,
 ) -> tuple[bool, str | None]:
     """Envia e-mail HTML. Retorna (sucesso, erro|None)."""
     if not is_configured():
@@ -52,6 +55,18 @@ def send_email(
             msg.attach(img_part)
         except Exception as e:
             logger.warning("Erro ao anexar QR code: %s", e)
+
+    for filepath, filename in attachments or []:
+        try:
+            with open(filepath, "rb") as fh:
+                part = MIMEBase("application", "octet-stream")
+                part.set_payload(fh.read())
+            encoders.encode_base64(part)
+            part.add_header("Content-Disposition", "attachment", filename=filename)
+            msg.attach(part)
+        except Exception as e:
+            logger.warning("Erro ao anexar arquivo %s: %s", filename, e)
+            return False, f"Erro ao anexar arquivo {filename}: {e}"
 
     try:
         ctx = ssl.create_default_context()

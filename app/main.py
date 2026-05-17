@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, Red
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.gzip import GZipMiddleware
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from sqlalchemy.orm import Session
 from . import db, crud, schemas
 from . import auth as auth_mod
@@ -13,20 +13,27 @@ from .services import email_service as mail
 from .services import story_service
 from .services import backup_service
 from io import BytesIO
+import asyncio
+import datetime
 import os
 import hashlib
 import hmac
 import logging
 import shutil
 import uuid
+from zoneinfo import ZoneInfo
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD") or "admin123"
 _COOKIE_SECRET = os.getenv("COOKIE_SECRET", "change-me-in-production")
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 UPLOAD_DIR = "/data/uploads"
+BACKUP_EMAIL_TO = os.getenv("BACKUP_EMAIL_TO", "edilsonsilvapro@gmail.com")
+BACKUP_EMAIL_TIME = os.getenv("BACKUP_EMAIL_TIME", "02:00")
+BACKUP_EMAIL_TIMEZONE = os.getenv("BACKUP_EMAIL_TIMEZONE", "America/Recife")
+BACKUP_EMAIL_ENABLED = os.getenv("BACKUP_EMAIL_ENABLED", "true").lower() in {"1", "true", "yes", "on"}
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs("backups", exist_ok=True)
@@ -56,17 +63,104 @@ def _get_client_ip(request: Request) -> str:
 
 # ─── Lifespan ─────────────────────────────────────────────────────────────────
 
+def _backup_email_next_run_seconds() -> float:
+    try:
+        hour_s, minute_s = (BACKUP_EMAIL_TIME.split(":", 1) + ["0"])[:2]
+        hour = max(0, min(23, int(hour_s)))
+        minute = max(0, min(59, int(minute_s)))
+    except ValueError:
+        logger.warning("BACKUP_EMAIL_TIME inválido (%s), usando 02:00", BACKUP_EMAIL_TIME)
+        hour, minute = 2, 0
+    try:
+        tz = ZoneInfo(BACKUP_EMAIL_TIMEZONE)
+    except Exception:
+        logger.warning("BACKUP_EMAIL_TIMEZONE inválido (%s), usando UTC", BACKUP_EMAIL_TIMEZONE)
+        tz = ZoneInfo("UTC")
+    now = datetime.datetime.now(tz)
+    next_run = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if next_run <= now:
+        next_run += datetime.timedelta(days=1)
+    return (next_run - now).total_seconds()
+
+
+def _run_daily_backup_email() -> None:
+    session = db.SessionLocal()
+    try:
+        result = backup_service.create_backup()
+        filename = result.get("filename") or "failed"
+        status = "success" if not result.get("error") else "failed"
+        crud.log_backup(session, filename, result.get("size_bytes"), status, result.get("error"))
+
+        if result.get("error"):
+            subject = "Falha no backup diário - Sorteios"
+            html = (
+                "<h2>Falha no backup diário</h2>"
+                f"<p>Erro: <code>{result.get('error')}</code></p>"
+            )
+            ok, err = mail.send_email(BACKUP_EMAIL_TO, subject, html)
+            crud.log_email(session, BACKUP_EMAIL_TO, subject, "sent" if ok else "failed", error=err)
+            return
+
+        fpath = backup_service.get_backup_path(filename)
+        if not fpath:
+            raise RuntimeError(f"Backup criado, mas arquivo não encontrado: {filename}")
+
+        size_mb = (result.get("size_bytes") or 0) / (1024 * 1024)
+        subject = f"Backup diário Sorteios - {filename}"
+        html = (
+            "<h2>Backup diário concluído</h2>"
+            f"<p>Arquivo: <strong>{filename}</strong></p>"
+            f"<p>Tamanho: {size_mb:.2f} MB</p>"
+            "<p>O backup está anexado a este e-mail.</p>"
+        )
+        ok, err = mail.send_email(
+            BACKUP_EMAIL_TO,
+            subject,
+            html,
+            attachments=[(fpath, filename)],
+        )
+        crud.log_email(session, BACKUP_EMAIL_TO, subject, "sent" if ok else "failed", error=err)
+        crud.log_admin_action(session, "backup_email", f"Arquivo: {filename} enviado para {BACKUP_EMAIL_TO}", "system")
+    except Exception as e:
+        logger.exception("Falha no job de backup diário por e-mail")
+        crud.log_backup(session, "failed", None, "failed", str(e))
+    finally:
+        session.close()
+
+
+async def _daily_backup_email_loop() -> None:
+    while True:
+        wait_seconds = _backup_email_next_run_seconds()
+        logger.info(
+            "Backup diário por e-mail agendado para %s (%s), destinatário=%s",
+            BACKUP_EMAIL_TIME,
+            BACKUP_EMAIL_TIMEZONE,
+            BACKUP_EMAIL_TO,
+        )
+        await asyncio.sleep(wait_seconds)
+        await asyncio.to_thread(_run_daily_backup_email)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     db.init_db()
     logger.info("Database initialized")
     admin_email = os.getenv("ADMIN_EMAIL", "")
-    admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+    admin_password = os.getenv("ADMIN_PASSWORD") or "admin123"
     if admin_email:
         db.seed_admin(admin_email, admin_password)
     else:
         db.seed_admin("admin@sorteios.local", admin_password)
-    yield
+    backup_task = None
+    if BACKUP_EMAIL_ENABLED and BACKUP_EMAIL_TO:
+        backup_task = asyncio.create_task(_daily_backup_email_loop())
+    try:
+        yield
+    finally:
+        if backup_task:
+            backup_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await backup_task
 
 
 app = FastAPI(title="Sorteios", version="2.0.0", lifespan=lifespan)

@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 COPY requirements.txt /app/requirements.txt
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential libjpeg-dev zlib1g-dev ca-certificates \
-        fonts-open-sans fonts-noto-core \
+        fonts-open-sans fonts-noto-core postgresql-client \
     && python -m pip install --upgrade pip setuptools wheel \
     && pip install --no-cache-dir -r /app/requirements.txt \
     && rm -rf /var/lib/apt/lists/* /root/.cache/pip

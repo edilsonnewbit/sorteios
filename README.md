@@ -54,6 +54,10 @@ ADMIN_EMAIL=admin@seudominio.com
 
 # Diretório de backups
 BACKUP_DIR=/data/backups
+BACKUP_EMAIL_ENABLED=true
+BACKUP_EMAIL_TO=edilsonsilvapro@gmail.com
+BACKUP_EMAIL_TIME=02:00
+BACKUP_EMAIL_TIMEZONE=America/Recife
 ```
 
 ---
@@ -126,12 +130,9 @@ Para configurar, preencha as variáveis `SMTP_*` no `.env`.
 ### Manual
 Acesse `/admin/backup` → **Criar Backup Agora**
 
-### Automático (crontab)
-```bash
-# Backup diário às 02:00
-0 2 * * * curl -X POST http://localhost:8000/admin/backup/criar \
-  -H "Cookie: admin_session=SEU_COOKIE" >> /var/log/sorteios-backup.log 2>&1
-```
+### Automático por e-mail
+O app cria um backup diário e envia o arquivo anexado para `BACKUP_EMAIL_TO`.
+Por padrão, o envio roda às `02:00` em `America/Recife`.
 
 Backups ficam em `./backups/` (ou `BACKUP_DIR` definido no .env).
 
