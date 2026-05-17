@@ -73,6 +73,7 @@ jobs:
             "POSTGRES_PASSWORD"
             "SESSION_SECRET"
             "ADMIN_API_KEY"
+            "ADMIN_PASSWORD"
           )
           
           for var in "${REQUIRED_VARS[@]}"; do
@@ -92,6 +93,7 @@ jobs:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
           ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
 
       - name: Deploy on Hostinger VPS
         uses: hostinger/deploy-on-vps@v2
@@ -107,6 +109,7 @@ jobs:
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
             SESSION_SECRET=${{ secrets.SESSION_SECRET }}
             ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY }}
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
             ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
             SMTP_HOST=${{ secrets.SMTP_HOST }}
             SMTP_PORT=${{ secrets.SMTP_PORT }}
@@ -136,6 +139,7 @@ jobs:
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
             SESSION_SECRET=${{ secrets.SESSION_SECRET }}
             ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY }}
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
             ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
             SMTP_HOST=${{ secrets.SMTP_HOST }}
             SMTP_PORT=${{ secrets.SMTP_PORT }}

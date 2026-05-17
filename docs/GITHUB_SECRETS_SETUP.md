@@ -53,6 +53,7 @@ Clicar em **"New repository secret"** para cada um abaixo:
 | `POSTGRES_PASSWORD` | Senha forte (24+ chars base64) | `openssl rand -base64 24` | `xQ8nK2pL9kV5mN3zZ7bY6xW4jK1fD9sE` |
 | `SESSION_SECRET` | Secret para cookies/sessão (32 hex) | `openssl rand -hex 32` | `a7f2c8e1b9d4k3n5m7z2x6v4w1q9s8r3` |
 | `ADMIN_API_KEY` | Admin API key (32 hex) | `openssl rand -hex 32` | `5m2k8n3v7z1x9w4q6j1f5d0s2l3a8p4c` |
+| `ADMIN_PASSWORD` | Senha do login `/admin/login` | Manual, texto puro | `senha-forte-aqui` |
 
 **✅ Instruções:**
 1. HOSTINGER_API_KEY: Gerar em Hostinger Dashboard
@@ -62,6 +63,7 @@ Clicar em **"New repository secret"** para cada um abaixo:
 3. POSTGRES_PASSWORD: `openssl rand -base64 24`
 4. SESSION_SECRET: `openssl rand -hex 32`
 5. ADMIN_API_KEY: `openssl rand -hex 32`
+6. ADMIN_PASSWORD: senha forte em texto puro, sem hash
 
 ---
 
@@ -94,6 +96,7 @@ SECRETS (obrigatório):
 [ ] POSTGRES_PASSWORD: [senha base64 de 24 chars]
 [ ] SESSION_SECRET: [secret hex de 32 chars]
 [ ] ADMIN_API_KEY: [api key hex de 32 chars]
+[ ] ADMIN_PASSWORD: [senha forte em texto puro]
 
 VARIABLES (obrigatório):
 [ ] HOSTINGER_VM_ID: [ID da VPS]
@@ -106,7 +109,7 @@ VARIABLES (obrigatório):
 Após adicionar todos:
 
 1. Ir para https://github.com/edilsonnewbit/sorteios/settings/secrets/actions
-   - Deve aparecer **5 secrets**
+   - Deve aparecer **6 secrets**
 
 2. Ir para https://github.com/edilsonnewbit/sorteios/settings/variables/actions
    - Deve aparecer **1 variable**

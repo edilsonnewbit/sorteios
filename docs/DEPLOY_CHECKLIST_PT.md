@@ -36,7 +36,7 @@ echo "SSH Private Key salvo em /tmp/chave.txt"
 1. Ir para: https://github.com/edilsonnewbit/sorteios/settings/secrets/actions
 2. Clicar em **"New repository secret"** para cada um:
 
-### 2.2 Adicionar 7 Secrets
+### 2.2 Adicionar 8 Secrets
 
 ```
 1. VPS_HOST
@@ -66,9 +66,13 @@ echo "SSH Private Key salvo em /tmp/chave.txt"
 7. ADMIN_API_KEY
    Valor: <api key hex de 32 chars>
    Origem: openssl rand -hex 32
+
+8. ADMIN_PASSWORD
+   Valor: <senha forte em texto puro>
+   Origem: definir manualmente; não usar hash bcrypt
 ```
 
-**Verificação:** Deve haver **7 secrets** listados em https://github.com/edilsonnewbit/sorteios/settings/secrets/actions
+**Verificação:** Deve haver **8 secrets** listados em https://github.com/edilsonnewbit/sorteios/settings/secrets/actions
 
 ---
 
@@ -141,12 +145,13 @@ POSTGRES_USER=sorteios_admin
 POSTGRES_PASSWORD=<POSTGRES_PASSWORD>
 SESSION_SECRET=<SESSION_SECRET>
 ADMIN_API_KEY=<ADMIN_API_KEY>
+ADMIN_PASSWORD=<ADMIN_PASSWORD>
 LOG_LEVEL=info
 ENVIRONMENT=production
 DEBUG=False
 EOF
 
-# Substituir <POSTGRES_PASSWORD>, <SESSION_SECRET>, <ADMIN_API_KEY> pelos valores reais
+# Substituir <POSTGRES_PASSWORD>, <SESSION_SECRET>, <ADMIN_API_KEY>, <ADMIN_PASSWORD> pelos valores reais
 ```
 
 ### 4.2 Iniciar Containers
