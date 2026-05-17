@@ -6,6 +6,7 @@
 // ── Constants ─────────────────────────────────────────────────────────────
 const COMPACT_THRESHOLD = 500;   // switch to compact pixel-map above this count
 const PAGE_SIZE = 1000;          // numbers per page in compact mode
+const MIN_AVAILABLE_ON_INITIAL_PAGE = 20;
 
 // ── State ─────────────────────────────────────────────────────────────────
 const state = {
@@ -15,6 +16,7 @@ const state = {
   pendingOrder: null,  // {token, pix_payload, qr_code_base64, expires_at, total, numbers}
   compactPage: 0,
   lastCartCount: 0,
+  autoFocusedAllPage: false,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -191,7 +193,40 @@ function renderCompactGrid(quotas) {
   grid.className = "rf-grid rf-compact-grid";
 
   const totalPages = Math.ceil(quotas.length / PAGE_SIZE);
-  const page = Math.max(0, Math.min(state.compactPage, totalPages - 1));
+  let targetPage = Math.max(0, Math.min(state.compactPage, totalPages - 1));
+
+  // No modo "Todos", na primeira carga tenta abrir direto em uma página
+  // com ao menos MIN_AVAILABLE_ON_INITIAL_PAGE números disponíveis para compra.
+  // Se não existir, usa a página com maior quantidade de disponíveis.
+  if (state.filterStatus === "all" && !state.autoFocusedAllPage) {
+    let bestPage = 0;
+    let bestCount = -1;
+
+    for (let p = 0; p < totalPages; p++) {
+      const startIdx = p * PAGE_SIZE;
+      const endIdx = startIdx + PAGE_SIZE;
+      const availableCount = quotas.slice(startIdx, endIdx).reduce((acc, q) => {
+        const isAvailable = q.status === "available" && !q.paid && !state.selected.has(q.number);
+        return acc + (isAvailable ? 1 : 0);
+      }, 0);
+
+      if (availableCount >= MIN_AVAILABLE_ON_INITIAL_PAGE) {
+        bestPage = p;
+        bestCount = availableCount;
+        break;
+      }
+
+      if (availableCount > bestCount) {
+        bestCount = availableCount;
+        bestPage = p;
+      }
+    }
+
+    targetPage = bestPage;
+    state.autoFocusedAllPage = true;
+  }
+
+  const page = targetPage;
   state.compactPage = page;
 
   const start = page * PAGE_SIZE;
@@ -471,6 +506,9 @@ const FILTER_LABELS = {
 function setFilter(status) {
   state.filterStatus = status;
   state.compactPage = 0;
+  if (status === "all") {
+    state.autoFocusedAllPage = false;
+  }
   document.querySelectorAll(".rf-ftab").forEach(btn => {
     btn.classList.toggle("active", btn.id === "ftab-" + status);
   });

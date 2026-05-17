@@ -45,6 +45,8 @@ def _crc16_ccitt(data: bytes) -> int:
 def _tlv(id_: str, value: str) -> str:
     # Comprimento em bytes UTF-8, conforme spec BACEN BR Code
     encoded_len = len(value.encode("utf-8"))
+    if encoded_len > 99:
+        raise ValueError(f"Campo TLV {id_} excede 99 bytes ({encoded_len})")
     length = f"{encoded_len:02d}"
     return f"{id_}{length}{value}"
 
@@ -69,12 +71,20 @@ def generate_pix_payload(key: str, amount: float, description: Optional[str] = N
     merchant_city = _normalize_ascii(merchant_city)
 
     # Merchant Account Information (ID 26) -> contains GUI (00) + key (01)
+    # and optional description (02). ID 26 template cannot exceed 99 bytes.
     gui = _tlv("00", "br.gov.bcb.pix")
     chave = _tlv("01", key)
     mai = gui + chave
     if description:
-        # some implementations put description in subfield 02 but it's optional
-        mai += _tlv("02", description[:99])
+        # Some implementations include description in subfield 02 (optional).
+        # Keep MAI <= 99 bytes to avoid malformed TLV (length field is 2 digits).
+        desc_limit = max(0, 99 - len(mai.encode("utf-8")) - 4)  # minus tag+len of subfield 02
+        if desc_limit > 0:
+            desc = description[:desc_limit]
+            while desc and len(desc.encode("utf-8")) > desc_limit:
+                desc = desc[:-1]
+            if desc:
+                mai += _tlv("02", desc)
     mai_tlv = _tlv("26", mai)
 
     payload = ""
