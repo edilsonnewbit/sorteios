@@ -299,24 +299,23 @@ def generate_story(
         fill_layer = _rounded_image(fill_layer, 11)
         _paste_rgba(canvas, fill_layer, (bar_x, bar_y))
 
-    pct_text = f"{sold} vendidos  •  {pct*100:.0f}%  •  {total - sold} restantes"
+    pct_text = f"{pct*100:.0f}% concluído  •  {max(0, 100 - (pct*100)):.0f}% para concluir"
     draw.text((W // 2, bar_y + bar_h + 22), pct_text, font=f_xs,
               fill=(154, 164, 178, 200), anchor="mm")
 
     # Urgency badge
-    remaining = total - sold
     urg_y = bar_y + bar_h + 68
-    if remaining < 20 and remaining > 0:
+    if pct >= 0.9 and pct < 1:
         draw.rounded_rectangle([(W - 500) // 2, urg_y, (W + 500) // 2, urg_y + 60],
                                radius=16, fill=(245, 158, 11, 40),
                                outline=(245, 158, 11, 120), width=1)
-        draw.text((W // 2, urg_y + 30), f"⚡ Apenas {remaining} números disponíveis!",
+        draw.text((W // 2, urg_y + 30), f"⚡ Reta final: {pct*100:.0f}% da meta atingida!",
                   font=f_xs, fill=(251, 191, 36, 255), anchor="mm")
     elif pct > 0.5:
         draw.rounded_rectangle([(W - 480) // 2, urg_y, (W + 480) // 2, urg_y + 60],
                                radius=16, fill=(239, 68, 68, 35),
                                outline=(248, 113, 113, 100), width=1)
-        draw.text((W // 2, urg_y + 30), f"🔥 {pct*100:.0f}% já reservado!",
+        draw.text((W // 2, urg_y + 30), f"🔥 {pct*100:.0f}% da meta já foi atingida!",
                   font=f_xs, fill=(252, 165, 165, 255), anchor="mm")
 
     # ── URL call-to-action ─────────────────────────────────────────────────────

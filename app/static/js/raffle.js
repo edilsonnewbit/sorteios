@@ -14,6 +14,7 @@ const state = {
   filterStatus: "all", // "all" | "available" | "reserved" | "paid" | "unpaid"
   pendingOrder: null,  // {token, pix_payload, qr_code_base64, expires_at, total, numbers}
   compactPage: 0,
+  lastCartCount: 0,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -93,14 +94,17 @@ function updateProgress(stats) {
   const sold = (stats.paid || 0) + (stats.reserved || 0);
   const total = stats.total || 1;
   const pct = Math.min((sold / total) * 100, 100);
+  const availablePct = Math.max(0, 100 - pct);
   const fill = $("progressFill");
   if (fill) fill.style.width = pct.toFixed(1) + "%";
-  const soldEl = $("statSold");
-  if (soldEl) soldEl.textContent = sold;
   const pctEl = $("statPct");
   if (pctEl) pctEl.textContent = pct.toFixed(1) + "%";
-  const availEl = $("statAvail");
-  if (availEl) availEl.textContent = stats.available || 0;
+  const soldPctEl = $("statSoldPct");
+  if (soldPctEl) soldPctEl.textContent = pct.toFixed(1) + "%";
+  const availPctEl = $("statAvailPct");
+  if (availPctEl) availPctEl.textContent = availablePct.toFixed(1) + "%";
+  const heroPctEl = $("heroStatPct");
+  if (heroPctEl) heroPctEl.textContent = pct.toFixed(1) + "%";
 }
 
 // ── Grid Rendering ─────────────────────────────────────────────────────────
@@ -251,7 +255,9 @@ function renderCompactGrid(quotas) {
   const badge = $("rfCompactBadge");
   if (badge) {
     badge.classList.remove("hidden");
-    badge.textContent = `Grade compacta · ${quotas.length.toLocaleString("pt-BR")} números · passe o mouse para ver o número`;
+    badge.textContent = isMobileViewport()
+      ? "Visualização compacta ativa"
+      : "Visualização compacta ativa. Passe o cursor para identificar um número.";
   }
 
   updatePagination(page, totalPages, start, Math.min(start + PAGE_SIZE, quotas.length));
@@ -267,7 +273,7 @@ function updatePagination(page, totalPages, rangeStart, rangeEnd) {
   pag.classList.remove("hidden");
   const info = $("rfPageInfo");
   if (info) {
-    info.textContent = `Números ${rangeStart + 1}–${rangeEnd} · Página ${page + 1} de ${totalPages}`;
+    info.textContent = totalPages > 1 ? `Página ${page + 1}` : "";
   }
   const prev = $("rfPagePrev");
   const next = $("rfPageNext");
@@ -302,6 +308,71 @@ function toggleNumber(num) {
 // ── Cart ──────────────────────────────────────────────────────────────────
 const CART_DETAIL_LIMIT = 20;
 
+function isMobileViewport() {
+  return window.matchMedia("(max-width: 900px)").matches;
+}
+
+function openMobileCart() {
+  if (!isMobileViewport()) return;
+  $("rfCart")?.classList.add("open");
+  $("rfCartBackdrop")?.classList.remove("hidden");
+  $("btnOpenMobileCart")?.setAttribute("aria-expanded", "true");
+  document.body.classList.add("rf-cart-open");
+}
+
+function closeMobileCart() {
+  $("rfCart")?.classList.remove("open");
+  $("rfCartBackdrop")?.classList.add("hidden");
+  $("btnOpenMobileCart")?.setAttribute("aria-expanded", "false");
+  document.body.classList.remove("rf-cart-open");
+}
+
+function syncMobileCartVisibility(count, total) {
+  const fab = $("rfCartFab");
+  const meta = $("cartFabMeta");
+  const totalEl = $("cartFabTotal");
+  const btn = $("btnOpenMobileCart");
+  if (!fab || !meta || !totalEl || !btn) return;
+
+  if (!isMobileViewport()) {
+    fab.classList.remove("visible", "has-items");
+    closeMobileCart();
+    return;
+  }
+
+  fab.classList.add("visible");
+  fab.classList.toggle("has-items", count > 0);
+  meta.textContent = count > 0
+    ? `${count.toLocaleString("pt-BR")} número(s) selecionado(s)`
+    : "Nenhum número selecionado";
+  totalEl.textContent = count > 0 ? fmtBRL(total) : "Escolha";
+  btn.disabled = false;
+}
+
+function pulseMobileCartFab() {
+  const fab = $("rfCartFab");
+  if (!fab || !isMobileViewport()) return;
+  fab.classList.remove("bump");
+  void fab.offsetWidth;
+  fab.classList.add("bump");
+}
+
+function syncQuickBuyOptions() {
+  const input = $("quickQty");
+  if (input) {
+    input.max = String(MAX_PER_PERSON);
+    if (parseInt(input.value || "0", 10) > MAX_PER_PERSON) {
+      input.value = String(MAX_PER_PERSON);
+    }
+  }
+  document.querySelectorAll(".rf-qty-btn").forEach(btn => {
+    const value = parseInt(btn.textContent || "0", 10);
+    const allowed = value > 0 && value <= MAX_PER_PERSON;
+    btn.hidden = !allowed;
+    btn.disabled = !allowed;
+  });
+}
+
 function updateCart() {
   const nums = [...state.selected].sort((a, b) => a - b);
   const count = nums.length;
@@ -314,6 +385,8 @@ function updateCart() {
     itemsEl.innerHTML = '<div class="rf-cart-empty">Nenhum número selecionado</div>';
     $("cartTotal").style.display = "none";
     $("btnCheckout").disabled = true;
+    syncMobileCartVisibility(count, total);
+    state.lastCartCount = count;
     return;
   }
 
@@ -339,6 +412,11 @@ function updateCart() {
   $("cartTotal").style.display = "flex";
   $("cartTotalValue").textContent = fmtBRL(total);
   $("btnCheckout").disabled = false;
+  syncMobileCartVisibility(count, total);
+  if (count > state.lastCartCount) {
+    pulseMobileCartFab();
+  }
+  state.lastCartCount = count;
 }
 
 window.removeFromCart = function(num) {
@@ -359,7 +437,7 @@ function setQuickQty(n) {
 }
 
 function quickBuy(forceQty) {
-  const qty = forceQty || parseInt($("quickQty").value) || 1;
+  const qty = Math.min(forceQty || parseInt($("quickQty").value) || 1, MAX_PER_PERSON);
   if (qty < 1) {
     toast("Informe ao menos 1 número.", "error");
     return;
@@ -383,7 +461,7 @@ function quickBuy(forceQty) {
 
 // ── Filter tabs ───────────────────────────────────────────────────────────
 const FILTER_LABELS = {
-  all: "Todos", available: "Livres", reserved: "Vendidos",
+  all: "Todos", available: "Livres", reserved: "Reservados",
   paid: "Pagos", unpaid: "Não pagos",
 };
 
@@ -397,21 +475,17 @@ function setFilter(status) {
 }
 
 function updateFilterCounts() {
-  const counts = { all: state.quotas.length, available: 0, reserved: 0, paid: 0 };
-  state.quotas.forEach(q => { if (counts[q.status] !== undefined) counts[q.status]++; });
-  counts.unpaid = counts.reserved;
-
   Object.entries(FILTER_LABELS).forEach(([key, label]) => {
     const el = $("ftab-" + key);
     if (!el) return;
-    const n = counts[key] ?? 0;
-    el.innerHTML = label + (n > 0 ? ` <span class="rf-ftab-count">${n}</span>` : "");
+    el.textContent = label;
   });
 }
 
 // ── Checkout Modal ────────────────────────────────────────────────────────
 function openCheckout() {
   if (!state.selected.size) return;
+  closeMobileCart();
   showStep(1);
   $("modalCheckout").classList.remove("hidden");
 }
@@ -537,6 +611,8 @@ document.addEventListener("DOMContentLoaded", () => {
   loadRaffle();
   initCountdown();
   initShareButtons();
+  syncMobileCartVisibility(0, 0);
+  syncQuickBuyOptions();
 
   $("btnQuickBuy").addEventListener("click", quickBuy);
   $("btnClearCart").addEventListener("click", () => {
@@ -545,6 +621,15 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCart();
   });
   $("btnCheckout").addEventListener("click", openCheckout);
+  $("btnOpenMobileCart")?.addEventListener("click", () => {
+    if ($("rfCart")?.classList.contains("open")) {
+      closeMobileCart();
+      return;
+    }
+    openMobileCart();
+  });
+  $("btnCloseMobileCart")?.addEventListener("click", closeMobileCart);
+  $("rfCartBackdrop")?.addEventListener("click", closeMobileCart);
   $("btnCloseCheckout").addEventListener("click", closeCheckout);
   $("btnCancelCheckout").addEventListener("click", closeCheckout);
   $("btnConfirmCheckout").addEventListener("click", confirmCheckout);
@@ -558,5 +643,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Keyboard
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") closeCheckout();
+  });
+
+  window.addEventListener("resize", () => {
+    syncMobileCartVisibility(state.selected.size, state.selected.size * PRICE_PER_QUOTA);
+    syncQuickBuyOptions();
   });
 });

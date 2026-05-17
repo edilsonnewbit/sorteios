@@ -62,8 +62,8 @@
           </div>
           {% endif %}
           <div class="rf-meta-item">
-            <span class="rf-meta-label">Total de números</span>
-            <span class="rf-meta-value">{{ stats.total }}</span>
+            <span class="rf-meta-label">Meta atual</span>
+            <span class="rf-meta-value" id="heroStatPct">{{ [((stats.paid + stats.reserved) / stats.total * 100)|round(1), 100]|min if stats.total else 0 }}%</span>
           </div>
         </div>
       </div>
@@ -90,7 +90,7 @@
 <div class="rf-progress-bar-section container">
   <div class="rf-progress-wrap">
     <div class="rf-progress-heading">
-      <span>Progresso da meta</span>
+      <span>Percentual para atingir a meta</span>
       <strong id="statPct">{{ [((stats.paid + stats.reserved) / stats.total * 100)|round(1), 100]|min if stats.total else 0 }}%</strong>
     </div>
     <div class="rf-progress-track">
@@ -98,24 +98,24 @@
            style="width: {{ [((stats.paid + stats.reserved) / stats.total * 100)|round(1), 100]|min if stats.total else 0 }}%"></div>
     </div>
     <div class="rf-progress-stats">
-      <span class="stat-sold"><strong id="statSold">{{ stats.paid + stats.reserved }}</strong> números vendidos</span>
-      <span class="stat-avail"><strong id="statAvail">{{ stats.available }}</strong> disponíveis</span>
+      <span class="stat-sold"><strong id="statSoldPct">{{ [((stats.paid + stats.reserved) / stats.total * 100)|round(1), 100]|min if stats.total else 0 }}%</strong> da meta concluída</span>
+      <span class="stat-avail"><strong id="statAvailPct">{{ [100 - (((stats.paid + stats.reserved) / stats.total * 100)|round(1)), 100]|min if stats.total else 100 }}%</strong> falta para concluir</span>
     </div>
   </div>
 
   <!-- Urgency blocks -->
   {% set sold_pct = ((stats.paid + stats.reserved) / stats.total * 100)|round(1) if stats.total else 0 %}
-  {% if stats.available < 20 and stats.available > 0 %}
+  {% if sold_pct >= 90 %}
   <div class="rf-urgency last-numbers">
-    ⚡ Apenas <strong>{{ stats.available }}</strong> números disponíveis!
+    ⚡ Reta final: mais de <strong>{{ sold_pct|round(0)|int }}%</strong> da meta já foi atingida.
   </div>
   {% elif sold_pct >= 75 %}
   <div class="rf-urgency almost-done">
-    🔥 Mais de {{ sold_pct|round(0)|int }}% dos números já foram reservados!
+    🔥 Mais de <strong>{{ sold_pct|round(0)|int }}%</strong> da meta já foi atingida.
   </div>
   {% elif sold_pct >= 50 %}
   <div class="rf-urgency popular">
-    🚀 Sorteio em alta! Mais da metade já foi reservada.
+    🚀 Sorteio em alta! A campanha já passou de <strong>50%</strong> da meta.
   </div>
   {% endif %}
 
@@ -173,7 +173,7 @@
         <div class="rf-filter-tabs">
           <button class="rf-ftab active" id="ftab-all"       onclick="setFilter('all')">Todos</button>
           <button class="rf-ftab"        id="ftab-available"  onclick="setFilter('available')">Livres</button>
-          <button class="rf-ftab"        id="ftab-reserved"   onclick="setFilter('reserved')">Vendidos</button>
+          <button class="rf-ftab"        id="ftab-reserved"   onclick="setFilter('reserved')">Reservados</button>
           <button class="rf-ftab"        id="ftab-paid"       onclick="setFilter('paid')">Pagos</button>
           <button class="rf-ftab"        id="ftab-unpaid"     onclick="setFilter('unpaid')">Não pagos</button>
         </div>
@@ -209,6 +209,7 @@
     <div class="rf-cart-header">
       <h3>🛒 Carrinho</h3>
       <span class="rf-cart-count" id="cartCount">0</span>
+      <button class="rf-cart-mobile-close" id="btnCloseMobileCart" type="button" aria-label="Fechar carrinho">×</button>
     </div>
 
     <div class="rf-cart-campaign">
@@ -234,6 +235,18 @@
     <p class="rf-cart-limit">Limite: {{ campaign.max_per_person }} números por pessoa</p>
     {% endif %}
   </aside>
+</div>
+
+<button class="rf-cart-backdrop hidden" id="rfCartBackdrop" type="button" aria-label="Fechar carrinho"></button>
+
+<div class="rf-cart-fab" id="rfCartFab">
+  <button class="rf-cart-fab-btn" id="btnOpenMobileCart" type="button" aria-controls="rfCart" aria-expanded="false">
+    <span class="rf-cart-fab-copy">
+      <span class="rf-cart-fab-title">Carrinho</span>
+      <span class="rf-cart-fab-meta" id="cartFabMeta">Nenhum número selecionado</span>
+    </span>
+    <span class="rf-cart-fab-total" id="cartFabTotal">Escolha</span>
+  </button>
 </div>
 
 <!-- ── Prize Details ─────────────────────────────────────────────────────── -->
